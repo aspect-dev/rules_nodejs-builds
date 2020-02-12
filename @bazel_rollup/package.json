@@ -1,0 +1,26 @@
+{
+    "name": "@bazel/rollup",
+    "peerDependencies": {
+        "rollup": ">=1.0.0 <2.0.0"
+    },
+    "description": "Run rollup.js bundler under Bazel",
+    "license": "Apache-2.0",
+    "version": "1.3.0-24-gbb6cf3a",
+    "repository": {
+        "type" : "git",
+        "url" : "https://github.com/bazelbuild/rules_nodejs.git",
+        "directory": "packages/rollup"
+    },
+    "bugs": {
+        "url": "https://github.com/bazelbuild/rules_nodejs/issues"
+    },
+    "keywords": [
+        "rollup",
+        "bazel"
+    ],
+    "bazelWorkspaces": {
+        "npm_bazel_rollup": {
+            "rootPath": "."
+        }
+    }
+}
