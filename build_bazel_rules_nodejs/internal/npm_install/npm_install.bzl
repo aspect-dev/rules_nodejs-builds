@@ -21,6 +21,7 @@ as the package manager.
 See discussion in the README.
 """
 
+load("//:version.bzl", "VERSION")
 load("//internal/common:check_bazel_version.bzl", "check_bazel_version")
 load("//internal/common:os_name.bzl", "is_windows_os")
 load("//internal/node:node_labels.bzl", "get_node_label", "get_npm_label", "get_yarn_label")
@@ -245,7 +246,7 @@ set -e
         repository_ctx.file(
             "_npm.cmd",
             content = """@echo off
-cd "{root}" && "{npm}" {npm_args}
+cd /D "{root}" && "{npm}" {npm_args}
 """.format(
                 root = root,
                 npm = repository_ctx.path(npm),
@@ -275,6 +276,7 @@ cd "{root}" && "{npm}" {npm_args}
     env_key = "BAZEL_NPM_INSTALL"
     if env_key not in env.keys():
         env[env_key] = "1"
+    env["BUILD_BAZEL_RULES_NODEJS_VERSION"] = VERSION
 
     repository_ctx.report_progress("Running npm install on %s" % repository_ctx.attr.package_json)
     result = repository_ctx.execute(
@@ -336,7 +338,7 @@ def _yarn_install_impl(repository_ctx):
 
     yarn_args = []
     if not repository_ctx.attr.use_global_yarn_cache:
-        yarn_args.extend(["--cache-folder", repository_ctx.path("_yarn_cache")])
+        yarn_args.extend(["--cache-folder", str(repository_ctx.path("_yarn_cache"))])
     else:
         # Multiple yarn rules cannot run simultaneously using a shared cache.
         # See https://github.com/yarnpkg/yarn/issues/683
@@ -382,7 +384,7 @@ unset YARN_IGNORE_PATH
             "_yarn.cmd",
             content = """@echo off
 set "YARN_IGNORE_PATH="
-cd "{root}" && "{yarn}" {yarn_args}
+cd /D "{root}" && "{yarn}" {yarn_args}
 """.format(
                 root = root,
                 yarn = repository_ctx.path(yarn),
@@ -412,6 +414,7 @@ cd "{root}" && "{yarn}" {yarn_args}
     env_key = "BAZEL_YARN_INSTALL"
     if env_key not in env.keys():
         env[env_key] = "1"
+    env["BUILD_BAZEL_RULES_NODEJS_VERSION"] = VERSION
 
     repository_ctx.report_progress("Running yarn install on %s" % repository_ctx.attr.package_json)
     result = repository_ctx.execute(

@@ -18,8 +18,41 @@ These rules let you run tests outside of a browser. This is typically faster
 than launching a test in Karma, for example.
 """
 
-load("@build_bazel_rules_nodejs//internal/common:devmode_js_sources.bzl", "devmode_js_sources")
+load("@build_bazel_rules_nodejs//:providers.bzl", "JSNamedModuleInfo")
 load("@build_bazel_rules_nodejs//internal/node:node.bzl", "nodejs_test")
+
+def _devmode_js_sources_impl(ctx):
+    depsets = []
+    for src in ctx.attr.srcs:
+        if JSNamedModuleInfo in src:
+            depsets.append(src[JSNamedModuleInfo].sources)
+        if hasattr(src, "files"):
+            depsets.append(src.files)
+    sources = depset(transitive = depsets)
+
+    ctx.actions.write(ctx.outputs.manifest, "".join([
+        f.short_path + "\n"
+        for f in sources.to_list()
+        if f.path.endswith(".js") or f.path.endswith(".mjs")
+    ]))
+
+    return [DefaultInfo(files = sources)]
+
+"""Rule to get devmode js sources from deps.
+
+Outputs a manifest file with the sources listed.
+"""
+_devmode_js_sources = rule(
+    implementation = _devmode_js_sources_impl,
+    attrs = {
+        "srcs": attr.label_list(
+            allow_files = True,
+        ),
+    },
+    outputs = {
+        "manifest": "%{name}.MF",
+    },
+)
 
 def jasmine_node_test(
         name,
@@ -34,6 +67,10 @@ def jasmine_node_test(
         jasmine_entry_point = "@npm//:node_modules/@bazel/jasmine/jasmine_runner.js",
         **kwargs):
     """Runs tests in NodeJS using the Jasmine test runner.
+
+    Detailed XML test results are found in the standard `bazel-testlogs`
+    directory. This may be symlinked in your workspace.
+    See https://docs.bazel.build/versions/master/output_directories.html
 
     To debug the test, see debugging notes in `nodejs_test`.
 
@@ -58,9 +95,9 @@ def jasmine_node_test(
       jasmine_entry_point: A label providing the `@bazel/jasmine` entry point.
       **kwargs: Remaining arguments are passed to the test rule
     """
-    devmode_js_sources(
+    _devmode_js_sources(
         name = "%s_devmode_srcs" % name,
-        deps = srcs + deps,
+        srcs = srcs + deps,
         testonly = 1,
         tags = tags,
     )
@@ -70,22 +107,19 @@ def jasmine_node_test(
     all_data += [":%s_devmode_srcs.MF" % name]
     all_data += [Label("@build_bazel_rules_nodejs//third_party/github.com/bazelbuild/bazel/tools/bash/runfiles")]
 
-    # If the target specified templated_args, pass it through.
-    templated_args = kwargs.pop("templated_args", [])
-    templated_args.append("$(rootpath :%s_devmode_srcs.MF)" % name)
-
-    if coverage:
-        templated_args.append("--coverage")
-    else:
-        templated_args.append("--nocoverage")
+    # jasmine_runner.js consumes the first 3 args.
+    # The remaining target templated_args will be passed through to jasmine or
+    # specs to consume.
+    templated_args = [
+        "$(rootpath :%s_devmode_srcs.MF)" % name,
+        "--coverage" if coverage else "--nocoverage",
+        "$(rootpath %s)" % config_file if config_file else "--noconfig",
+    ] + kwargs.pop("templated_args", [])
 
     if config_file:
         # Calculate a label relative to the user's BUILD file
         pkg = Label("%s//%s:__pkg__" % (native.repository_name(), native.package_name()))
         all_data.append(pkg.relative(config_file))
-        templated_args.append("$(rootpath %s)" % config_file)
-    else:
-        templated_args.append("--noconfig")
 
     nodejs_test(
         name = name,

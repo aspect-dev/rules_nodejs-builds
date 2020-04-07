@@ -1,6 +1,6 @@
 "Rules for running Rollup under Bazel"
 
-load("@build_bazel_rules_nodejs//:providers.bzl", "JSEcmaScriptModuleInfo", "JSModuleInfo", "NodeContextInfo", "NpmPackageInfo", "node_modules_aspect", "run_node")
+load("@build_bazel_rules_nodejs//:providers.bzl", "JSEcmaScriptModuleInfo", "NodeContextInfo", "NpmPackageInfo", "node_modules_aspect", "run_node")
 load("@build_bazel_rules_nodejs//internal/linker:link_node_modules.bzl", "module_mappings_aspect")
 
 _DOC = """Runs the Rollup.js CLI under Bazel.
@@ -64,6 +64,16 @@ You must not repeat file(s) passed to entry_point/entry_points.
 """,
         # Don't try to constrain the filenames, could be json, svg, whatever
         allow_files = True,
+    ),
+    "args": attr.string_list(
+        doc = """Command line arguments to pass to rollup. Can be used to override config file settings.
+
+These argument passed on the command line before all arguments that are always added by the
+rule such as `--output.dir` or `--output.file`, `--format`, `--config` and `--preserveSymlinks` and
+also those that are optionally added by the rule such as `--sourcemap`.
+
+See rollup CLI docs https://rollupjs.org/guide/en/#command-line-flags for complete list of supported arguments.""",
+        default = [],
     ),
     "config_file": attr.label(
         doc = """A rollup.config.js file
@@ -168,6 +178,21 @@ Otherwise, the outputs are assumed to be a single file.
         cfg = "host",
         default = "@npm//rollup/bin:rollup",
     ),
+    "rollup_worker_bin": attr.label(
+        doc = "Internal use only",
+        executable = True,
+        cfg = "host",
+        # NB: will be substituted with "@npm//@bazel/rollup/bin:rollup-worker" when the pkg_npm target is built
+        default = "@npm//@bazel/rollup/bin:rollup-worker",
+    ),
+    "silent": attr.bool(
+        doc = """Whether to execute the rollup binary with the --silent flag, defaults to False.
+
+Using --silent can cause rollup to [ignore errors/warnings](https://github.com/rollup/rollup/blob/master/docs/999-big-list-of-options.md#onwarn) 
+which are only surfaced via logging.  Since bazel expects printing nothing on success, setting silent to True
+is a more Bazel-idiomatic experience, however could cause rollup to drop important warnings.
+""",
+    ),
     "sourcemap": attr.string(
         doc = """Whether to produce sourcemaps.
 
@@ -175,6 +200,14 @@ Passed to the [`--sourcemap` option](https://github.com/rollup/rollup/blob/maste
 """,
         default = "inline",
         values = ["inline", "hidden", "true", "false"],
+    ),
+    "supports_workers": attr.bool(
+        doc = """Experimental! Use only with caution.
+
+Allows you to enable the Bazel Worker strategy for this library.
+When enabled, this rule invokes the "rollup_worker_bin"
+worker aware binary rather than "rollup_bin".""",
+        default = False,
     ),
     "deps": attr.label_list(
         aspects = [module_mappings_aspect, node_modules_aspect],
@@ -271,8 +304,6 @@ def _rollup_bundle(ctx):
     for dep in ctx.attr.deps:
         if JSEcmaScriptModuleInfo in dep:
             deps_depsets.append(dep[JSEcmaScriptModuleInfo].sources)
-        elif JSModuleInfo in dep:
-            deps_depsets.append(dep[JSModuleInfo].sources)
         elif hasattr(dep, "files"):
             deps_depsets.append(dep.files)
 
@@ -287,6 +318,14 @@ def _rollup_bundle(ctx):
 
     # See CLI documentation at https://rollupjs.org/guide/en/#command-line-reference
     args = ctx.actions.args()
+
+    if ctx.attr.supports_workers:
+        # Set to use a multiline param-file for worker mode
+        args.use_param_file("@%s", use_always = True)
+        args.set_param_file_format("multiline")
+
+    # Add user specified arguments *before* rule supplied arguments
+    args.add_all(ctx.attr.args)
 
     # List entry point argument first to save some argv space
     # Rollup doc says
@@ -304,6 +343,10 @@ def _rollup_bundle(ctx):
         args.add_all(["--output.file", outputs[0].path])
 
     args.add_all(["--format", ctx.attr.format])
+
+    if ctx.attr.silent:
+        # Run the rollup binary with the --silent flag
+        args.add("--silent")
 
     stamp = ctx.attr.node_context_data[NodeContextInfo].stamp
 
@@ -331,20 +374,27 @@ def _rollup_bundle(ctx):
     if (ctx.attr.sourcemap and ctx.attr.sourcemap != "false"):
         args.add_all(["--sourcemap", ctx.attr.sourcemap])
 
+    executable = "rollup_bin"
+    execution_requirements = {}
+
+    if ctx.attr.supports_workers:
+        executable = "rollup_worker_bin"
+        execution_requirements["supports-workers"] = str(int(ctx.attr.supports_workers))
+
     run_node(
         ctx,
         progress_message = "Bundling JavaScript %s [rollup]" % outputs[0].short_path,
-        executable = "rollup_bin",
+        executable = executable,
         inputs = inputs,
         outputs = outputs,
         arguments = [args],
+        mnemonic = "Rollup",
+        execution_requirements = execution_requirements,
+        env = {"COMPILATION_MODE": ctx.var["COMPILATION_MODE"]},
     )
 
-    outputs_depset = depset(outputs)
-
     return [
-        DefaultInfo(files = outputs_depset),
-        JSModuleInfo(sources = outputs_depset),
+        DefaultInfo(files = depset(outputs)),
     ]
 
 rollup_bundle = rule(

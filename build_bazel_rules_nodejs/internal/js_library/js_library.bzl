@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""js_library allows defining a set of javascript sources and assigning a module_name and module_root.
+"""js_library allows defining a set of javascript sources and assigning a package_name.
 
 DO NOT USE - this is not fully designed, and exists only to enable testing within this repo.
 """
+
+load("//:providers.bzl", "LinkablePackageInfo")
+load("//third_party/github.com/bazelbuild/bazel-skylib:rules/private/copy_file_private.bzl", "copy_bash", "copy_cmd")
 
 _AMD_NAMES_DOC = """Mapping from require module names to global variables.
 This allows devmode JS sources to load unnamed UMD bundles from third-party libraries."""
@@ -46,23 +49,80 @@ def write_amd_names_shim(actions, amd_names_shim, targets):
                 amd_names_shim_content += "define(\"%s\", function() { return %s });\n" % n
     actions.write(amd_names_shim, amd_names_shim_content)
 
-def _js_library(ctx):
-    return [
+def _impl(ctx):
+    files = []
+
+    is_all_sources = ctx.files.srcs and ctx.files.srcs[0].is_source
+    for src in ctx.files.srcs:
+        if src.is_source:
+            dst = ctx.actions.declare_file(src.basename, sibling = src)
+            if ctx.attr.is_windows:
+                copy_cmd(ctx, src, dst)
+            else:
+                copy_bash(ctx, src, dst)
+            files.append(dst)
+        else:
+            files.append(src)
+
+    files_depset = depset(files)
+
+    result = [
         DefaultInfo(
-            files = depset(ctx.files.srcs),
+            files = files_depset,
             runfiles = ctx.runfiles(files = ctx.files.srcs),
         ),
         AmdNamesInfo(names = ctx.attr.amd_names),
     ]
 
-js_library = rule(
-    implementation = _js_library,
+    if ctx.attr.package_name:
+        path = "/".join([p for p in [ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package] if p])
+        result.append(LinkablePackageInfo(
+            package_name = ctx.attr.package_name,
+            path = path,
+            files = files_depset,
+        ))
+
+    return result
+
+_js_library = rule(
+    implementation = _impl,
     attrs = {
-        "srcs": attr.label_list(allow_files = [".js"]),
+        "package_name": attr.string(),
+        "srcs": attr.label_list(
+            allow_files = True,
+            mandatory = True,
+        ),
         "amd_names": attr.string_dict(doc = _AMD_NAMES_DOC),
-        "module_from_src": attr.bool(),
-        # Used to determine module mappings
+        "is_windows": attr.bool(mandatory = True, doc = "Automatically set by macro"),
+        # module_name for legacy ts_library module_mapping support
+        # TODO: remove once legacy module_mapping is removed
         "module_name": attr.string(),
-        "module_root": attr.string(),
     },
 )
+
+def js_library(
+        name,
+        srcs,
+        amd_names = {},
+        package_name = None,
+        **kwargs):
+    """Internal use only. May be published to the public API in a future release."""
+    module_name = kwargs.pop("module_name", None)
+    if module_name:
+        fail("use package_name instead of module_name in target //%s:%s" % (native.package_name(), name))
+    if kwargs.pop("is_windows", None):
+        fail("is_windows is set by the js_library macro and should not be set explicitely")
+    _js_library(
+        name = name,
+        srcs = srcs,
+        amd_names = amd_names,
+        package_name = package_name,
+        # module_name for legacy ts_library module_mapping support
+        # TODO: remove once legacy module_mapping is removed
+        module_name = package_name,
+        is_windows = select({
+            "@bazel_tools//src/conditions:host_windows": True,
+            "//conditions:default": False,
+        }),
+        **kwargs
+    )

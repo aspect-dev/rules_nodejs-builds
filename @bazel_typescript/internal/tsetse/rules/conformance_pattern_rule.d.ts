@@ -1,4 +1,5 @@
 import { Checker } from '../checker';
+import { ErrorCode } from '../error_code';
 import { AbstractRule } from '../rule';
 import { Fixer } from '../util/fixer';
 import { Config, PatternKind } from '../util/pattern_config';

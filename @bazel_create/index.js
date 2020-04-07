@@ -107,7 +107,7 @@ function main(argv, error = console.error, log = console.log) {
 
   if (args['typescript']) {
     devDependencies['@bazel/typescript'] = 'latest';
-    devDependencies['typescript'] = '~3.4.0';
+    devDependencies['typescript'] = 'latest';
     write('tsconfig.json', '');
     rootBuildContent += '# Allow any ts_library rules in this workspace to reference the config\n' +
         '# Note: if you move the tsconfig.json file to a subdirectory, you can add an alias() here instead\n' +
@@ -140,7 +140,7 @@ npm_install(
     package_lock_json = "//:package-lock.json",
 )`;
 
-  let workspaceContent = `# Bazel workspace created by @bazel/create 1.3.0-24-gbb6cf3a
+  let workspaceContent = `# Bazel workspace created by @bazel/create 1.5.0-31-g3017d04
 
 # Declares that this directory is the root of a Bazel workspace.
 # See https://docs.bazel.build/versions/master/build-ref.html#workspace
@@ -157,8 +157,8 @@ workspace(
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "build_bazel_rules_nodejs",
-    sha256 = "b6670f9f43faa66e3009488bbd909bc7bc46a5a9661a33f6bc578068d1837f37",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.3.0/rules_nodejs-1.3.0.tar.gz"],
+    sha256 = "d0c4bb8b902c1658f42eb5563809c70a06e46015d64057d25560b0eb4bdc9007",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.5.0/rules_nodejs-1.5.0.tar.gz"],
 )
 
 ${pkgMgr === 'yarn' ? yarnInstallCmd : npmInstallCmd}

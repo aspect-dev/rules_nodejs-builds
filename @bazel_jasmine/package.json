@@ -2,7 +2,7 @@
     "name": "@bazel/jasmine",
     "description": "Run Jasmine tests under Bazel",
     "license": "Apache-2.0",
-    "version": "1.3.0-24-gbb6cf3a",
+    "version": "1.5.0-31-g3017d04",
     "repository": {
         "type" : "git",
         "url" : "https://github.com/bazelbuild/rules_nodejs.git",
@@ -17,13 +17,17 @@
     ],
     "main": "index.js",
     "dependencies": {
-        "jasmine": "~3.4.0",
-        "jasmine-core": "~3.4.0",
+        "jasmine": "~3.5.0",
+        "jasmine-core": "~3.5.0",
+        "jasmine-reporters": "~2.3.2",
         "v8-coverage": "1.0.9"
     },
     "bazelWorkspaces": {
         "npm_bazel_jasmine": {
             "rootPath": "."
         }
+    },
+    "scripts": {
+        "postinstall": "node npm_version_check.js"
     }
 }

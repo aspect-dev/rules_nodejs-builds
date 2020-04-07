@@ -3,6 +3,7 @@
  * code, since no value (including NaN) is equal to NaN.
  */
 import { Checker } from '../checker';
+import { ErrorCode } from '../error_code';
 import { AbstractRule } from '../rule';
 export declare class Rule extends AbstractRule {
     readonly ruleName = "equals-nan";

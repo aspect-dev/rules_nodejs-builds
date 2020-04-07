@@ -19,104 +19,13 @@ load("//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfile
 
 _DOC = """Generates a params file from a list of arguments."""
 
+# See params_file macro below for docstrings
 _ATTRS = {
-    "out": attr.output(
-        doc = """Path of the output file, relative to this package.""",
-        mandatory = True,
-    ),
-    "args": attr.string_list(
-        doc = """Arguments to concatenate into a params file.
-
-Subject to 'Make variable' substitution. See https://docs.bazel.build/versions/master/be/make-variables.html.
-
-1. Predefined source/output path substitions is applied first:
-
-Expands all `$(execpath ...)`, `$(rootpath ...)` and legacy `$(location ...)` templates in the
-given string by replacing with the expanded path. Expansion only works for labels that point to direct dependencies
-of this rule or that are explicitly listed in the optional argument targets.
-
-See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables.
-
-Use `$(rootpath)` and `$(rootpaths)` to expand labels to the runfiles path that a built binary can use
-to find its dependencies. This path is of the format:
-- `./file`
-- `path/to/file`
-- `../external_repo/path/to/file`
-
-Use `$(execpath)` and `$(execpaths)` to expand labels to the execroot (where Bazel runs build actions).
-This is of the format:
-- `./file`
-- `path/to/file`
-- `external/external_repo/path/to/file`
-- `<bin_dir>/path/to/file`
-- `<bin_dir>/external/external_repo/path/to/file`
-
-The legacy `$(location)` and `$(locations)` expansion is DEPRECATED as it returns the runfiles manifest path of the
-format `repo/path/to/file` which behaves differently than the built-in `$(location)` expansion in args of *_binary
-and *_test rules which returns the rootpath.
-See https://docs.bazel.build/versions/master/be/common-definitions.html#common-attributes-binaries.
-
-The legacy `$(location)` and `$(locations)` expansion also differs from how the builtin `ctx.expand_location()` expansions
-of `$(location)` and `$(locations)` behave as that function returns either the execpath or rootpath depending on the context.
-See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables.
-
-The behavior of `$(location)` and `$(locations)` expansion may change in the future with support either being removed
-entirely or the expansion changed to return the same path as `ctx.expand_location()` returns for these.
-
-The recommended approach is to now use `$(rootpath)` where you previously used $(location).
-
-To get from a $(rootpath) to the absolute path you can use the javascript runfiles helper to resolve to the absolute path.
-
-For example,
-
-BUILD.bazel:
-```
-params_file(
-    name = "params_file",
-    out = ":params_file.out",
-    args = ["$(rootpath :some_file)"],
-    data = [":some_file"],
-)
-
-nodejs_test(
-    name = "my_test",
-    data = [
-        ":params_file.out",
-        ":some_file",
-    ],
-    entry_point = ":params_file.spec.js",
-    templated_args = ["$(rootpath :params_file.out)"],
-)
-```
-
-my_test.js:
-```
-const fs = require('fs');
-const runfiles = require(process.env['BAZEL_NODE_RUNFILES_HELPER']);
-const args = process.argv.slice(2);
-const params_file = runfiles.resolveWorkspaceRelative(args[0]);
-const params = fs.readFileSync(params_file, 'utf-8').split(/\r?\n/);
-const some_file = runfiles.resolveWorkspaceRelative(params[0])
-```
-
-2. Predefined variables & Custom variables are expanded second:
-
-Predefined "Make" variables such as $(COMPILATION_MODE) and $(TARGET_CPU) are expanded.
-See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_variables.
-
-Custom variables are also expanded including variables set through the Bazel CLI with --define=SOME_VAR=SOME_VALUE.
-See https://docs.bazel.build/versions/master/be/make-variables.html#custom_variables.
-
-Predefined genrule variables are not supported in this context.""",
-    ),
-    "data": attr.label_list(
-        doc = """Data for predefined source/output path variable expansions in args.""",
-        allow_files = True,
-    ),
+    "out": attr.output(mandatory = True),
+    "args": attr.string_list(),
+    "data": attr.label_list(allow_files = True),
     "is_windows": attr.bool(mandatory = True),
     "newline": attr.string(
-        doc = """one of ["auto", "unix", "windows"]: line endings to use. "auto"
-for platform-determined, "unix" for LF, and "windows" for CRLF.""",
         values = ["unix", "windows", "auto"],
         default = "auto",
     ),
@@ -138,8 +47,7 @@ def _impl(ctx):
 
     expanded_args = []
 
-    # First expand predefined source/output path variables:
-    # $(execpath), $(rootpath) & legacy $(location)
+    # First expand predefined source/output path variables
     for a in ctx.attr.args:
         expanded_args += _expand_location_into_runfiles(ctx, a)
 
@@ -164,18 +72,57 @@ _params_file = rule(
 )
 
 def params_file(
+        name,
+        out,
+        args = [],
+        data = [],
         newline = "auto",
         **kwargs):
     """Generates a UTF-8 encoded params file from a list of arguments.
 
-    Handles "Make" variable substitutions for args.
+    Handles variable substitutions for args.
 
     Args:
-      newline: one of ["auto", "unix", "windows"]: line endings to use. "auto"
-          for platform-determined, "unix" for LF, and "windows" for CRLF.
-      **kwargs: further keyword arguments, e.g. <code>visibility</code>
+        name: Name of the rule.
+        out: Path of the output file, relative to this package.
+        args: Arguments to concatenate into a params file.
+
+            Subject to 'Make variable' substitution. See https://docs.bazel.build/versions/master/be/make-variables.html.
+
+            1. Subject to predefined source/output path variables substitutions.
+
+            The predefined variables `execpath`, `execpaths`, `rootpath`, `rootpaths`, `location`, and `locations` take
+            label parameters (e.g. `$(execpath //foo:bar)`) and substitute the file paths denoted by that label.
+
+            See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables for more info.
+
+            NB: This $(location) substition returns the manifest file path which differs from the *_binary & *_test
+            args and genrule bazel substitions. This will be fixed in a future major release.
+            See docs string of `expand_location_into_runfiles` macro in `internal/common/expand_into_runfiles.bzl`
+            for more info.
+
+            2. Subject to predefined variables & custom variable substitutions.
+
+            Predefined "Make" variables such as $(COMPILATION_MODE) and $(TARGET_CPU) are expanded.
+            See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_variables.
+
+            Custom variables are also expanded including variables set through the Bazel CLI with --define=SOME_VAR=SOME_VALUE.
+            See https://docs.bazel.build/versions/master/be/make-variables.html#custom_variables.
+
+            Predefined genrule variables are not supported in this context.
+
+        data: Data for $(location) expansions in args.
+        newline: Line endings to use. One of ["auto", "unix", "windows"].
+
+            "auto" for platform-determined
+            "unix" for LF
+            "windows" for CRLF
     """
     _params_file(
+        name = name,
+        out = out,
+        args = args,
+        data = data,
         newline = newline or "auto",
         is_windows = select({
             "@bazel_tools//src/conditions:host_windows": True,

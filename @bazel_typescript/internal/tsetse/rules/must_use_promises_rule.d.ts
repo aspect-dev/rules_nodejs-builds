@@ -3,6 +3,7 @@
  * blocks are awaited or used.
  */
 import { Checker } from '../checker';
+import { ErrorCode } from '../error_code';
 import { AbstractRule } from '../rule';
 export declare class Rule extends AbstractRule {
     readonly ruleName = "must-use-promises";

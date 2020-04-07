@@ -95,7 +95,7 @@ def run_node(ctx, inputs, arguments, executable, **kwargs):
                 env[var] = ctx.var[var]
             elif var in ctx.configuration.default_shell_env.keys():
                 env[var] = ctx.configuration.default_shell_env[var]
-    env["NODE_MODULES_ROOT"] = _compute_node_modules_root(ctx)
+    env["BAZEL_NODE_MODULES_ROOT"] = _compute_node_modules_root(ctx)
 
     ctx.actions.run(
         inputs = inputs + extra_inputs,

@@ -2,7 +2,7 @@
     "name": "@bazel/typescript",
     "description": "TypeScript rules for Bazel",
     "license": "Apache-2.0",
-    "version": "1.3.0-24-gbb6cf3a",
+    "version": "1.5.0-31-g3017d04",
     "repository": {
         "type": "git",
         "url": "https://github.com/bazelbuild/rules_nodejs.git",
@@ -18,7 +18,8 @@
     "main": "./internal/tsc_wrapped/index.js",
     "typings": "./internal/tsc_wrapped/index.d.ts",
     "bin": {
-        "tsc_wrapped": "./internal/tsc_wrapped/tsc_wrapped.js"
+        "tsc_wrapped": "./internal/tsc_wrapped/tsc_wrapped.js",
+        "ts_project_options_validator": "./internal/ts_project_options_validator.js"
     },
     "//": "note that typescript doesn't follow semver, so technically anything 3.6 or higher might break us",
     "peerDependencies": {
@@ -34,5 +35,8 @@
         "npm_bazel_typescript": {
             "rootPath": "."
         }
+    },
+    "scripts": {
+      "postinstall": "node npm_version_check.js"
     }
 }

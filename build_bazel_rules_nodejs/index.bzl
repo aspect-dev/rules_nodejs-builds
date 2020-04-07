@@ -17,6 +17,7 @@
 Users should not load files under "/internal"
 """
 
+load("//:version.bzl", "VERSION")
 load("//internal/common:check_bazel_version.bzl", _check_bazel_version = "check_bazel_version")
 load("//internal/common:check_version.bzl", "check_version")
 load("//internal/common:copy_to_bin.bzl", _copy_to_bin = "copy_to_bin")
@@ -52,7 +53,7 @@ COMMON_REPLACEMENTS = {
     # Replace loads from @bazel_skylib with the dummy rule above
     "(load\\(\"@bazel_skylib//:bzl_library.bzl\", \"bzl_library\"\\))": "# bazel_skylib mocked out\n# $1\nload(\"@build_bazel_rules_nodejs//:index.bzl\", bzl_library = \"dummy_bzl_library\")",
     # Make sure we don't try to load from under tools/ which isn't in the distro
-    "(load\\(\"//:tools/defaults.bzl\", \"codeowners\"\\))": "# defaults.bzl not included in distribution\n# $1",
+    "(load\\(\"//:tools/defaults.bzl\", .*\\))": "# defaults.bzl not included in distribution\n# $1",
     # Cleanup up package.json @bazel/foobar package deps for published packages:
     # "@bazel/foobar": "0.0.0-PLACEHOLDER" => "@bazel/foobar": "0.0.0-PLACEHOLDER"
     "\"@bazel/([a-zA-Z_-]+)\":\\s+\"(file|bazel)[^\"]+\"": "\"@bazel/$1\": \"0.0.0-PLACEHOLDER\"",
@@ -83,17 +84,11 @@ def yarn_install(**kwargs):
     _node_repositories()
     _yarn_install(**kwargs)
 
-# This version is synced with the version in package.json.
-# It will be automatically synced via the npm "version" script
-# that is run when running `npm version` during the release
-# process. See `Releasing` section in README.md.
-VERSION = "1.3.0"
-
 # Currently used Bazel version. This version is what the rules here are tested
 # against.
 # This version should be updated together with the version of the Bazel
 # in .bazelversion. This is asserted in //internal:bazel_version_test.
-BAZEL_VERSION = "2.1.0"
+BAZEL_VERSION = "3.0.0rc2"
 
 # Versions of Bazel which users should be able to use.
 # Ensures we don't break backwards-compatibility,

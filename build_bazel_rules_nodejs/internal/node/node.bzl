@@ -20,10 +20,11 @@ They support module mapping: any targets in the transitive dependencies with
 a `module_name` attribute can be `require`d by that name.
 """
 
-load("//:providers.bzl", "JSModuleInfo", "NodeRuntimeDepsInfo", "NpmPackageInfo", "node_modules_aspect")
+load("//:providers.bzl", "JSNamedModuleInfo", "NodeRuntimeDepsInfo", "NpmPackageInfo", "node_modules_aspect")
 load("//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
 load("//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
 load("//internal/common:path_utils.bzl", "strip_external")
+load("//internal/common:preserve_legacy_templated_args.bzl", "preserve_legacy_templated_args")
 load("//internal/common:windows_utils.bzl", "create_windows_native_launcher_script", "is_windows")
 load("//internal/linker:link_node_modules.bzl", "module_mappings_aspect", "write_node_modules_manifest")
 load("//internal/node:node_repositories.bzl", "BUILT_IN_NODE_PLATFORMS")
@@ -54,9 +55,9 @@ def _compute_node_modules_root(ctx):
             node_modules_root = "/".join([ctx.attr.node_modules[NpmPackageInfo].workspace, "node_modules"])
         elif ctx.files.node_modules:
             # ctx.files.node_modules is not an empty list
-            workspace = ctx.attr.node_modules.label.workspace_root.split("/")[1] if ctx.attr.node_modules.label.workspace_root else ctx.workspace_name
+            workspace_name = ctx.attr.node_modules.label.workspace_name if ctx.attr.node_modules.label.workspace_name else ctx.workspace_name
             node_modules_root = "/".join([f for f in [
-                workspace,
+                workspace_name,
                 _trim_package_node_modules(ctx.attr.node_modules.label.package),
                 "node_modules",
             ] if f])
@@ -70,9 +71,9 @@ def _compute_node_modules_root(ctx):
     if not node_modules_root:
         # there are no fine grained deps and the node_modules attribute is an empty filegroup
         # but we still need a node_modules_root even if its empty
-        workspace = ctx.attr.node_modules.label.workspace_root.split("/")[1] if ctx.attr.node_modules.label.workspace_root else ctx.workspace_name
+        workspace_name = ctx.attr.node_modules.label.workspace_name if ctx.attr.node_modules.label.workspace_name else ctx.workspace_name
         node_modules_root = "/".join([f for f in [
-            workspace,
+            workspace_name,
             ctx.attr.node_modules.label.package,
             "node_modules",
         ] if f])
@@ -86,7 +87,7 @@ def _write_require_patch_script(ctx, node_modules_root):
     for d in ctx.attr.data:
         if hasattr(d, "runfiles_module_mappings"):
             for [mn, mr] in d.runfiles_module_mappings.items():
-                escaped = mn.replace("/", "\/").replace(".", "\.")
+                escaped = mn.replace("/", "\\/").replace(".", "\\.")
                 mapping = "{module_name: /^%s\\b/, module_root: '%s'}" % (escaped, mr)
                 module_mappings.append(mapping)
 
@@ -116,7 +117,7 @@ def _write_loader_script(ctx):
     if entry_point_path.endswith(".ts"):
         entry_point_path = entry_point_path[:-3] + ".js"
     elif entry_point_path.endswith(".tsx"):
-        entry_point_path = entry_point_path[:-4] + ".jsx"
+        entry_point_path = entry_point_path[:-4] + ".js"
 
     ctx.actions.expand_template(
         template = ctx.file._loader_template,
@@ -165,8 +166,9 @@ def _nodejs_binary_impl(ctx):
     sources_depsets = []
 
     for d in ctx.attr.data:
-        if JSModuleInfo in d:
-            sources_depsets.append(d[JSModuleInfo].sources)
+        # TODO: switch to JSModuleInfo when it is available
+        if JSNamedModuleInfo in d:
+            sources_depsets.append(d[JSNamedModuleInfo].sources)
         if hasattr(d, "files"):
             sources_depsets.append(d.files)
     sources = depset(transitive = sources_depsets)
@@ -177,9 +179,11 @@ def _nodejs_binary_impl(ctx):
     _write_loader_script(ctx)
 
     env_vars = "export BAZEL_TARGET=%s\n" % ctx.label
-    env_vars += "export BAZEL_WORKSPACE=%s\n" % ctx.workspace_name
-    env_vars += """if [[ -z "${NODE_MODULES_ROOT:-}" ]]; then
-  export NODE_MODULES_ROOT=%s
+
+    # if BAZEL_NODE_MODULES_ROOT has not already been set by
+    # run_node, then set it to the computed value
+    env_vars += """if [[ -z "${BAZEL_NODE_MODULES_ROOT:-}" ]]; then
+  export BAZEL_NODE_MODULES_ROOT=%s
 fi
 """ % node_modules_root
     for k in ctx.attr.configuration_env_vars + ctx.attr.default_env_vars:
@@ -214,9 +218,13 @@ fi
 
     is_builtin = ctx.attr._node.label.workspace_name in ["nodejs_%s" % p for p in BUILT_IN_NODE_PLATFORMS]
 
+    # First replace any instances of "$(rlocation " with "$$(rlocation " to preserve
+    # legacy uses of "$(rlocation"
+    expanded_args = [preserve_legacy_templated_args(a) for a in ctx.attr.templated_args]
+
     # First expand predefined source/output path variables:
     # $(execpath), $(rootpath) & legacy $(location)
-    expanded_args = [expand_location_into_runfiles(ctx, a, ctx.attr.data) for a in ctx.attr.templated_args]
+    expanded_args = [expand_location_into_runfiles(ctx, a, ctx.attr.data) for a in expanded_args]
 
     # Next expand predefined variables & custom variables
     expanded_args = [ctx.expand_make_variables("templated_args", e, {}) for e in expanded_args]
@@ -227,6 +235,8 @@ fi
         #       Need a smarter split operation than `expanded_arg.split(" ")` as it will split
         #       up args with intentional spaces and it will fail for expanded files with spaces.
         "TEMPLATED_args": " ".join(expanded_args),
+        "TEMPLATED_entry_point_execroot_path": _to_execroot_path(ctx, ctx.file.entry_point),
+        "TEMPLATED_entry_point_manifest_path": _to_manifest_path(ctx, ctx.file.entry_point),
         "TEMPLATED_env_vars": env_vars,
         "TEMPLATED_expected_exit_code": str(expected_exit_code),
         "TEMPLATED_link_modules_script": _to_manifest_path(ctx, ctx.file._link_modules_script),
@@ -236,7 +246,6 @@ fi
         "TEMPLATED_repository_args": _to_manifest_path(ctx, ctx.file._repository_args),
         "TEMPLATED_require_patch_script": _to_manifest_path(ctx, ctx.outputs.require_patch_script),
         "TEMPLATED_runfiles_helper_script": _to_manifest_path(ctx, ctx.file._runfiles_helper_script),
-        "TEMPLATED_script_path": _to_execroot_path(ctx, ctx.file.entry_point),
         "TEMPLATED_vendored_node": "" if is_builtin else strip_external(ctx.file._node.path),
     }
     ctx.actions.expand_template(
@@ -456,39 +465,17 @@ jasmine_node_test(
 
 Subject to 'Make variable' substitution. See https://docs.bazel.build/versions/master/be/make-variables.html.
 
-1. Predefined source/output path substitions is applied first:
+1. Subject to predefined source/output path variables substitutions.
 
-Expands all `$(execpath ...)`, `$(rootpath ...)` and legacy `$(location ...)` templates in the
-given string by replacing with the expanded path. Expansion only works for labels that point to direct dependencies
-of this rule or that are explicitly listed in the optional argument targets.
+The predefined variables `execpath`, `execpaths`, `rootpath`, `rootpaths`, `location`, and `locations` take
+label parameters (e.g. `$(execpath //foo:bar)`) and substitute the file paths denoted by that label.
 
-See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables.
+See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables for more info.
 
-Use `$(rootpath)` and `$(rootpaths)` to expand labels to the runfiles path that a built binary can use
-to find its dependencies. This path is of the format:
-- `./file`
-- `path/to/file`
-- `../external_repo/path/to/file`
-
-Use `$(execpath)` and `$(execpaths)` to expand labels to the execroot (where Bazel runs build actions).
-This is of the format:
-- `./file`
-- `path/to/file`
-- `external/external_repo/path/to/file`
-- `<bin_dir>/path/to/file`
-- `<bin_dir>/external/external_repo/path/to/file`
-
-The legacy `$(location)` and `$(locations)` expansion is DEPRECATED as it returns the runfiles manifest path of the
-format `repo/path/to/file` which behaves differently than the built-in `$(location)` expansion in args of *_binary
-and *_test rules which returns the rootpath.
-See https://docs.bazel.build/versions/master/be/common-definitions.html#common-attributes-binaries.
-
-The legacy `$(location)` and `$(locations)` expansion also differs from how the builtin `ctx.expand_location()` expansions
-of `$(location)` and `$(locations)` behave as that function returns either the execpath or rootpath depending on the context.
-See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables.
-
-The behavior of `$(location)` and `$(locations)` expansion may change in the future with support either being removed
-entirely or the expansion changed to return the same path as `ctx.expand_location()` returns for these.
+NB: This $(location) substition returns the manifest file path which differs from the *_binary & *_test
+args and genrule bazel substitions. This will be fixed in a future major release.
+See docs string of `expand_location_into_runfiles` macro in `internal/common/expand_into_runfiles.bzl`
+for more info.
 
 The recommended approach is to now use `$(rootpath)` where you previously used $(location).
 
@@ -534,9 +521,12 @@ of being expanded. `$(rlocation)` is then evaluated by the bash node launcher sc
 the `rlocation` function in the runfiles.bash helper. For example, the templated arg
 `$$(rlocation $(rootpath //:some_file))` is expanded by Bazel to `$(rlocation ./some_file)` which
 is then converted in bash to the absolute path of `//:some_file` in runfiles by the runfiles.bash helper
-before being passed as an argument to the program
+before being passed as an argument to the program.
 
-2. Predefined variables & Custom variables are expanded second:
+NB: nodejs_binary and nodejs_test will preserve the legacy behavior of `$(rlocation)` so users don't
+need to update to `$$(rlocation)`. This may be changed in the future.
+
+2. Subject to predefined variables & custom variable substitutions.
 
 Predefined "Make" variables such as $(COMPILATION_MODE) and $(TARGET_CPU) are expanded.
 See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_variables.

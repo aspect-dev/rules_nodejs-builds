@@ -95,13 +95,24 @@ This will produce one output per requested format.
 ### Usage
 
 ```
-rollup_bundle(name, config_file, deps, entry_point, entry_points, format, node_context_data, output_dir, rollup_bin, sourcemap, srcs)
+rollup_bundle(name, args, config_file, deps, entry_point, entry_points, format, node_context_data, output_dir, rollup_bin, rollup_worker_bin, silent, sourcemap, srcs, supports_workers)
 ```
 
 
 
 #### `name`
 (*[name], mandatory*): A unique name for this target.
+
+#### `args`
+(*List of strings*): Command line arguments to pass to rollup. Can be used to override config file settings.
+
+These argument passed on the command line before all arguments that are always added by the
+rule such as `--output.dir` or `--output.file`, `--format`, `--config` and `--preserveSymlinks` and
+also those that are optionally added by the rule such as `--sourcemap`.
+
+See rollup CLI docs https://rollupjs.org/guide/en/#command-line-flags for complete list of supported arguments.
+
+Defaults to `[]`
 
 #### `config_file`
 (*[label]*): A rollup.config.js file
@@ -209,6 +220,20 @@ Defaults to `False`
 
 Defaults to `@npm//rollup/bin:rollup`
 
+#### `rollup_worker_bin`
+(*[label]*): Internal use only
+
+Defaults to `@npm//@bazel/rollup/bin:rollup-worker`
+
+#### `silent`
+(*Boolean*): Whether to execute the rollup binary with the --silent flag, defaults to False.
+
+Using --silent can cause rollup to [ignore errors/warnings](https://github.com/rollup/rollup/blob/master/docs/999-big-list-of-options.md#onwarn) 
+which are only surfaced via logging.  Since bazel expects printing nothing on success, setting silent to True
+is a more Bazel-idiomatic experience, however could cause rollup to drop important warnings.
+
+Defaults to `False`
+
 #### `sourcemap`
 (*String*): Whether to produce sourcemaps.
 
@@ -222,4 +247,13 @@ Defaults to `"inline"`
 You must not repeat file(s) passed to entry_point/entry_points.
 
 Defaults to `[]`
+
+#### `supports_workers`
+(*Boolean*): Experimental! Use only with caution.
+
+Allows you to enable the Bazel Worker strategy for this library.
+When enabled, this rule invokes the "rollup_worker_bin"
+worker aware binary rather than "rollup_bin".
+
+Defaults to `False`
 

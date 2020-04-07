@@ -144,9 +144,12 @@ export interface BazelOptions {
      */
     hasImplementation?: boolean;
     /**
-     * Enable the Angular ngtsc plugin.
+     * If present, run the Angular ngtsc plugin with the given options.
      */
-    compileAngularTemplates?: boolean;
+    angularCompilerOptions?: {
+        [k: string]: any;
+        assets: string[];
+    };
     /**
      * Override for ECMAScript target language level to use for devmode.
      *

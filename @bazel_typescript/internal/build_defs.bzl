@@ -14,7 +14,7 @@
 
 "TypeScript compilation"
 
-load("@build_bazel_rules_nodejs//:providers.bzl", "NpmPackageInfo", "js_ecma_script_module_info", "js_module_info", "js_named_module_info", "node_modules_aspect")
+load("@build_bazel_rules_nodejs//:providers.bzl", "LinkablePackageInfo", "NpmPackageInfo", "js_ecma_script_module_info", "js_named_module_info", "node_modules_aspect", "run_node")
 
 # pylint: disable=unused-argument
 # pylint: disable=missing-docstring
@@ -22,8 +22,17 @@ load("//internal:common/compilation.bzl", "COMMON_ATTRIBUTES", "DEPS_ASPECTS", "
 load("//internal:common/tsconfig.bzl", "create_tsconfig")
 load("//internal:ts_config.bzl", "TsConfigInfo")
 
+# NB: substituted with "@npm//@bazel/typescript/bin:tsc_wrapped" in the pkg_npm rule
 _DEFAULT_COMPILER = "@npm//@bazel/typescript/bin:tsc_wrapped"
 _DEFAULT_NODE_MODULES = Label("@npm//typescript:typescript__typings")
+
+_TYPESCRIPT_SCRIPT_TARGETS = ["es3", "es5", "es2015", "es2016", "es2017", "es2018", "esnext"]
+_TYPESCRIPT_MODULE_KINDS = ["none", "commonjs", "amd", "umd", "system", "es2015", "esnext"]
+
+_DEVMODE_TARGET_DEFAULT = "es2015"
+_DEVMODE_MODULE_DEFAULT = "umd"
+_PRODMODE_TARGET_DEFAULT = "es2015"
+_PRODMODE_MODULE_DEFAULT = "esnext"
 
 def _trim_package_node_modules(package_name):
     # trim a package name down to its path prior to a node_modules
@@ -142,7 +151,8 @@ def _compile_action(ctx, inputs, outputs, tsconfig_file, node_opts, description 
         arguments.append(tsconfig_file.path)
         mnemonic = "tsc"
 
-    ctx.actions.run(
+    run_node(
+        ctx,
         progress_message = "Compiling TypeScript (%s) %s" % (description, ctx.label),
         mnemonic = mnemonic,
         inputs = action_inputs,
@@ -152,7 +162,7 @@ def _compile_action(ctx, inputs, outputs, tsconfig_file, node_opts, description 
         # See https://github.com/NixOS/nixpkgs/issues/43955#issuecomment-407546331
         use_default_shell_env = True,
         arguments = arguments,
-        executable = ctx.executable.compiler,
+        executable = "compiler",
         execution_requirements = {
             "supports-workers": str(int(ctx.attr.supports_workers)),
         },
@@ -218,9 +228,15 @@ def tsc_wrapped_tsconfig(
     )
     config["bazelOptions"]["nodeModulesPrefix"] = node_modules_root
 
-    # Override the target so we use es2015 for devmode
-    # Since g3 isn't ready to do this yet
-    config["compilerOptions"]["target"] = "es2015"
+    # Control target & module via attributes
+    if devmode_manifest:
+        # NB: devmode target may still be overriden with a tsconfig bazelOpts.devmodeTargetOverride but that
+        #     configuration settings will be removed in a future major release
+        config["compilerOptions"]["target"] = ctx.attr.devmode_target if hasattr(ctx.attr, "devmode_target") else _DEVMODE_TARGET_DEFAULT
+        config["compilerOptions"]["module"] = ctx.attr.devmode_module if hasattr(ctx.attr, "devmode_module") else _DEVMODE_MODULE_DEFAULT
+    else:
+        config["compilerOptions"]["target"] = ctx.attr.prodmode_target if hasattr(ctx.attr, "prodmode_target") else _PRODMODE_TARGET_DEFAULT
+        config["compilerOptions"]["module"] = ctx.attr.prodmode_module if hasattr(ctx.attr, "prodmode_module") else _PRODMODE_MODULE_DEFAULT
 
     # It's fine for users to have types[] in their tsconfig.json to help the editor
     # know which of the node_modules/@types/* entries to include in the program.
@@ -274,10 +290,6 @@ def _ts_library_impl(ctx):
     # See design doc https://docs.google.com/document/d/1ggkY5RqUkVL4aQLYm7esRW978LgX3GUCnQirrk5E1C0/edit#
     # and issue https://github.com/bazelbuild/rules_nodejs/issues/57 for more details.
     ts_providers["providers"].extend([
-        js_module_info(
-            sources = ts_providers["typescript"]["es5_sources"],
-            deps = ctx.attr.deps,
-        ),
         js_named_module_info(
             sources = ts_providers["typescript"]["es5_sources"],
             deps = ctx.attr.deps,
@@ -286,9 +298,19 @@ def _ts_library_impl(ctx):
             sources = ts_providers["typescript"]["es6_sources"],
             deps = ctx.attr.deps,
         ),
-        # TODO: remove legacy "typescript" provider
+        # TODO: Add remaining shared JS provider from design doc
+        # (JSModuleInfo) and remove legacy "typescript" provider
         # once it is no longer needed.
     ])
+
+    if ctx.attr.module_name:
+        path = "/".join([p for p in [ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package] if p])
+        ts_providers["providers"].append(LinkablePackageInfo(
+            package_name = ctx.attr.module_name,
+            path = path,
+            files = ts_providers["typescript"]["es5_sources"],
+            _tslibrary = True,
+        ))
 
     return ts_providers_dict_to_struct(ts_providers)
 
@@ -300,8 +322,10 @@ ts_library = rule(
             allow_files = [".ts", ".tsx"],
             mandatory = True,
         ),
-        "compile_angular_templates": attr.bool(
-            doc = """Run the Angular ngtsc compiler under ts_library""",
+        "angular_assets": attr.label_list(
+            doc = """Additional files the Angular compiler will need to read as inputs.
+            Includes .css and .html files""",
+            allow_files = [".css", ".html"],
         ),
         "compiler": attr.label(
             doc = """Sets a different TypeScript compiler binary to use for this library.
@@ -319,6 +343,20 @@ the compiler attribute manually.
             allow_files = True,
             executable = True,
             cfg = "host",
+        ),
+        "devmode_module": attr.string(
+            doc = """Set the typescript `module` compiler option for devmode output.
+
+This value will override the `module` option in the user supplied tsconfig.""",
+            values = _TYPESCRIPT_MODULE_KINDS,
+            default = _DEVMODE_MODULE_DEFAULT,
+        ),
+        "devmode_target": attr.string(
+            doc = """Set the typescript `target` compiler option for devmode output.
+
+This value will override the `target` option in the user supplied tsconfig.""",
+            values = _TYPESCRIPT_SCRIPT_TARGETS,
+            default = _DEVMODE_TARGET_DEFAULT,
         ),
         "internal_testing_type_check_dependencies": attr.bool(default = False, doc = "Testing only, whether to type check inputs that aren't srcs."),
         "node_modules": attr.label(
@@ -386,6 +424,20 @@ yarn_install(
 """,
             default = _DEFAULT_NODE_MODULES,
         ),
+        "prodmode_module": attr.string(
+            doc = """Set the typescript `module` compiler option for prodmode output.
+
+This value will override the `module` option in the user supplied tsconfig.""",
+            values = _TYPESCRIPT_MODULE_KINDS,
+            default = _PRODMODE_MODULE_DEFAULT,
+        ),
+        "prodmode_target": attr.string(
+            doc = """Set the typescript `target` compiler option for prodmode output.
+
+This value will override the `target` option in the user supplied tsconfig.""",
+            values = _TYPESCRIPT_SCRIPT_TARGETS,
+            default = _PRODMODE_TARGET_DEFAULT,
+        ),
         "supports_workers": attr.bool(
             doc = """Intended for internal use only.
 
@@ -416,6 +468,9 @@ either:
         "tsickle_typed": attr.bool(
             default = True,
             doc = "If using tsickle, instruct it to translate types to ClosureJS format",
+        ),
+        "use_angular_plugin": attr.bool(
+            doc = """Run the Angular ngtsc compiler under ts_library""",
         ),
         "deps": attr.label_list(
             aspects = DEPS_ASPECTS + [node_modules_aspect],

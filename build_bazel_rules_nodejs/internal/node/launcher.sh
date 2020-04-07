@@ -142,10 +142,16 @@ fi
 
 # Export the location of the runfiles helpers script
 export BAZEL_NODE_RUNFILES_HELPER=$(rlocation "TEMPLATED_runfiles_helper_script")
+if [[ "${BAZEL_NODE_RUNFILES_HELPER}" != /* ]] && [[ ! "${BAZEL_NODE_RUNFILES_HELPER}" =~ ^[A-Z]:[\\/] ]]; then
+  export BAZEL_NODE_RUNFILES_HELPER=$(pwd)/${BAZEL_NODE_RUNFILES_HELPER}
+fi
 
 # Export the location of the require patch script as it can be used to boostrap
 # node require patch if needed
 export BAZEL_NODE_PATCH_REQUIRE=$(rlocation "TEMPLATED_require_patch_script")
+if [[ "${BAZEL_NODE_PATCH_REQUIRE}" != /* ]] && [[ ! "${BAZEL_NODE_PATCH_REQUIRE}" =~ ^[A-Z]:[\\/] ]]; then
+  export BAZEL_NODE_PATCH_REQUIRE=$(pwd)/${BAZEL_NODE_PATCH_REQUIRE}
+fi
 
 # The main entry point
 MAIN=$(rlocation "TEMPLATED_loader_script")
@@ -185,7 +191,10 @@ for ARG in "${ALL_ARGS[@]:-}"; do
   case "$ARG" in
     --bazel_node_modules_manifest=*) MODULES_MANIFEST="${ARG#--bazel_node_modules_manifest=}" ;;
     --nobazel_patch_module_resolver)
-      MAIN="TEMPLATED_script_path"
+      declare MAIN="TEMPLATED_entry_point_execroot_path"
+      if [[ ! -f "$MAIN" ]]; then
+        MAIN=$(rlocation "TEMPLATED_entry_point_manifest_path")
+      fi
       LAUNCHER_NODE_OPTIONS=( "--require" "$node_patches_script" )
 
       # In this case we should always run the linker
@@ -208,6 +217,22 @@ fi
 # Bazel always sets the PWD to execroot/my_wksp so we go up one directory.
 export BAZEL_PATCH_ROOT=$(dirname $PWD)
 
+# Set all bazel managed node_modules directories as guarded so no symlinks may
+# escape and no symlinks may enter
+if [ "$(basename ${BAZEL_PATCH_ROOT})" == "execroot" ]; then
+  # We are in execroot, linker node_modules is in the PWD
+  export BAZEL_PATCH_GUARDS="${PWD}/node_modules"
+else
+  # We in runfiles, linker node_modules is at the runfiles root
+  export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_ROOT}/node_modules"
+fi
+if [[ -n "${BAZEL_NODE_MODULES_ROOT:-}" ]]; then
+  # If BAZEL_NODE_MODULES_ROOT is set, add it to the list of bazel patch guards
+  # Also, add the external/${BAZEL_NODE_MODULES_ROOT} which is the correct path under execroot
+  # and under runfiles it is the legacy external runfiles path
+  export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${BAZEL_PATCH_ROOT}/${BAZEL_NODE_MODULES_ROOT},${PWD}/external/${BAZEL_NODE_MODULES_ROOT}"
+fi
+
 # The EXPECTED_EXIT_CODE lets us write bazel tests which assert that
 # a binary fails to run. Otherwise any failure would make such a test
 # fail before we could assert that we expected that failure.
@@ -218,12 +243,12 @@ if [ "${EXPECTED_EXIT_CODE}" -eq "0" ]; then
   # handled by the node process.
   # If we had merely forked a child process here, we'd be responsible
   # for forwarding those OS interactions.
-  exec "${node}" "${LAUNCHER_NODE_OPTIONS[@]:-}" "${USER_NODE_OPTIONS[@]:-}" "${MAIN}" "${ARGS[@]:-}"
+  exec "${node}" "${LAUNCHER_NODE_OPTIONS[@]:-}" "${USER_NODE_OPTIONS[@]:-}" "${MAIN}" ${ARGS[@]+"${ARGS[@]}"}
   # exec terminates execution of this shell script, nothing later will run.
 fi
 
 set +e
-"${node}" "${LAUNCHER_NODE_OPTIONS[@]:-}" "${USER_NODE_OPTIONS[@]:-}" "${MAIN}" "${ARGS[@]:-}"
+"${node}" "${LAUNCHER_NODE_OPTIONS[@]:-}" "${USER_NODE_OPTIONS[@]:-}" "${MAIN}" ${ARGS[@]+"${ARGS[@]}"}
 RESULT="$?"
 set -e
 

@@ -66,8 +66,8 @@ def expand_location_into_runfiles(ctx, input, targets = []):
     of `$(location)` and `$(locations)` behave as that function returns either the execpath or rootpath depending on the context.
     See https://docs.bazel.build/versions/master/be/make-variables.html#predefined_label_variables.
 
-    The behavior of `$(location)` and `$(locations)` expansion may change in the future with support either being removed
-    entirely or the expansion changed to return the same path as `ctx.expand_location()` returns for these.
+    The behavior of `$(location)` and `$(locations)` expansion will be fixed in a future major release to match the
+    to default Bazel behavior and return the same path as `ctx.expand_location()` returns for these.
 
     The recommended approach is to now use `$(rootpath)` where you previously used $(location). See the docstrings
     of `nodejs_binary` or `params_file` for examples of how to use `$(rootpath)` in `templated_args` and `args` respectively.

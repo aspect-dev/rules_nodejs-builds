@@ -20,17 +20,18 @@ Users should not load files under "/internal"
 load(
     "//internal/providers:declaration_info.bzl",
     _DeclarationInfo = "DeclarationInfo",
-    _declaration_info = "declaration_info",
     _provide_declarations = "provide_declarations",
 )
 load(
     "//internal/providers:js_providers.bzl",
     _JSEcmaScriptModuleInfo = "JSEcmaScriptModuleInfo",
-    _JSModuleInfo = "JSModuleInfo",
     _JSNamedModuleInfo = "JSNamedModuleInfo",
     _js_ecma_script_module_info = "js_ecma_script_module_info",
-    _js_module_info = "js_module_info",
     _js_named_module_info = "js_named_module_info",
+)
+load(
+    "//internal/providers:linkable_package_info.bzl",
+    _LinkablePackageInfo = "LinkablePackageInfo",
 )
 load(
     "//internal/providers:node_runtime_deps_info.bzl",
@@ -43,17 +44,15 @@ load(
     _node_modules_aspect = "node_modules_aspect",
 )
 
-DeclarationInfo = _DeclarationInfo
-declaration_info = _declaration_info
 provide_declarations = _provide_declarations
-JSModuleInfo = _JSModuleInfo
-js_module_info = _js_module_info
+DeclarationInfo = _DeclarationInfo
 JSNamedModuleInfo = _JSNamedModuleInfo
 js_named_module_info = _js_named_module_info
 JSEcmaScriptModuleInfo = _JSEcmaScriptModuleInfo
 js_ecma_script_module_info = _js_ecma_script_module_info
 NpmPackageInfo = _NpmPackageInfo
 node_modules_aspect = _node_modules_aspect
+LinkablePackageInfo = _LinkablePackageInfo
 
 #Modelled after _GoContextData in rules_go/go/private/context.bzl
 NodeContextInfo = provider(

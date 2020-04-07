@@ -1,4 +1,5 @@
 import { Checker } from '../checker';
+import { ErrorCode } from '../error_code';
 import { AbstractRule } from '../rule';
 /**
  * A Tsetse rule that checks for some potential unsafe property renaming

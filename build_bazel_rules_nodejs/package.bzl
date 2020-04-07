@@ -77,11 +77,11 @@ def rules_nodejs_dev_dependencies():
     # See https://releases.bazel.build/bazel-toolchains.html
     http_archive(
         name = "bazel_toolchains",
-        sha256 = "4d348abfaddbcee0c077fc51bb1177065c3663191588ab3d958f027cbfe1818b",
-        strip_prefix = "bazel-toolchains-2.1.0",
+        sha256 = "81e08efc3b26cdb14fe4188574d5797dbf8b348a79ecbe50e66f7992ab210fbe",
+        strip_prefix = "bazel-toolchains-2.2.2",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/2.1.0/bazel-toolchains-2.1.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.1.0/bazel-toolchains-2.1.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/2.2.2/bazel-toolchains-2.2.2.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.2.2/bazel-toolchains-2.2.2.tar.gz",
         ],
     )
 
@@ -104,6 +104,12 @@ def rules_nodejs_dev_dependencies():
             "https://mirror.bazel.build/github.com/zegl/rules_codeowners/archive/826b742ee0d6703736c8c4f45fd07d65315cf599.zip",
             "https://github.com/zegl/rules_codeowners/archive/826b742ee0d6703736c8c4f45fd07d65315cf599.zip",
         ],
+    )
+
+    http_archive(
+        name = "rules_pkg",
+        url = "https://github.com/bazelbuild/rules_pkg/releases/download/0.2.5/rules_pkg-0.2.5.tar.gz",
+        sha256 = "352c090cc3d3f9a6b4e676cf42a6047c16824959b438895a76c2989c6d7c246a",
     )
 
 def _maybe(repo_rule, name, **kwargs):

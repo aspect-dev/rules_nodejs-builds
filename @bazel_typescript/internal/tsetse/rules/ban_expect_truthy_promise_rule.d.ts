@@ -4,6 +4,7 @@
  * expect(await returnsPromise()).toBeTruthy() and forgot the await.
  */
 import { Checker } from '../checker';
+import { ErrorCode } from '../error_code';
 import { AbstractRule } from '../rule';
 export declare class Rule extends AbstractRule {
     readonly ruleName = "ban-expect-truthy-promise";

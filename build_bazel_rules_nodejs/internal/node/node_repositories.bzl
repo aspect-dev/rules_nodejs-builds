@@ -199,6 +199,7 @@ are supported by the node version being used.""",
             "1.12.3": ("yarn-v1.12.3.tar.gz", "yarn-v1.12.3", "02cd4b589ec22c4bdbd2bc5ebbfd99c5e99b07242ad68a539cb37896b93a24f2"),
             "1.13.0": ("yarn-v1.13.0.tar.gz", "yarn-v1.13.0", "125d40ebf621ebb08e3f66a618bd2cc5cd77fa317a312900a1ab4360ed38bf14"),
             "1.19.1": ("yarn-v1.19.1.tar.gz", "yarn-v1.19.1", "34293da6266f2aae9690d59c2d764056053ff7eebc56b80b8df05010c3da9343"),
+            "1.22.4": ("yarn-v1.22.4.tar.gz", "yarn-v1.22.4", "bc5316aa110b2f564a71a3d6e235be55b98714660870c5b6b2d2d3f12587fb58"),
             # When adding a new version. please update /docs/install.md
         },
         doc = """Custom list of yarn repositories to use.
@@ -233,7 +234,9 @@ node_repositories(
         "1.12.1": ("yarn-v1.12.1.tar.gz", "yarn-v1.12.1", "09bea8f4ec41e9079fa03093d3b2db7ac5c5331852236d63815f8df42b3ba88d"),
     },
     yarn_version = "1.12.1",
-    yarn_urls = "https://github.com/yarnpkg/yarn/releases/download/v{version}/{filename}",
+    yarn_urls = [
+        "https://github.com/yarnpkg/yarn/releases/download/v{version}/{filename}",
+    ],
 )
 ```
 
@@ -509,7 +512,7 @@ SET SCRIPT_DIR=%~dp0
 """ + "".join([
             """
 echo Running npm %* in {root}
-cd "{root}"
+cd /D "{root}"
 CALL "%SCRIPT_DIR%\\{node}" "%SCRIPT_DIR%\\{script}" --scripts-prepend-node-path=false %*
 if %errorlevel% neq 0 exit /b %errorlevel%
 """.format(
@@ -595,7 +598,7 @@ SET SCRIPT_DIR=%~dp0
             """
 echo Running yarn %* in {root}
 SET "YARN_IGNORE_PATH="
-cd "{root}"
+cd /D "{root}"
 CALL "%SCRIPT_DIR%\\{node}" "%SCRIPT_DIR%\\{script}" %*
 if %errorlevel% neq 0 exit /b %errorlevel%
 """.format(

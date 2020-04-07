@@ -1,17 +1,17 @@
 import * as ts from 'typescript';
 import { FileLoader } from './cache';
 import { CompilerHost } from './compiler_host';
-import { DiagnosticPlugin, TscPlugin } from './plugin_api';
+import { DiagnosticPlugin } from './plugin_api';
 import { BazelOptions } from './tsconfig';
 /**
  * Top-level entry point for tsc_wrapped.
  */
-export declare function main(args: string[]): 0 | 1;
+export declare function main(args: string[]): 1 | 0;
 /**
  * Gather diagnostics from TypeScript's type-checker as well as other plugins we
  * install such as strict dependency checking.
  */
-export declare function gatherDiagnostics(options: ts.CompilerOptions, bazelOpts: BazelOptions, program: ts.Program, disabledTsetseRules: string[], angularPlugin?: TscPlugin, plugins?: DiagnosticPlugin[]): ts.Diagnostic[];
+export declare function gatherDiagnostics(options: ts.CompilerOptions, bazelOpts: BazelOptions, program: ts.Program, disabledTsetseRules: string[], plugins?: DiagnosticPlugin[]): ts.Diagnostic[];
 /**
  * Construct diagnostic plugins that we always want included.
  *
@@ -26,9 +26,7 @@ export declare function getCommonPlugins(options: ts.CompilerOptions, bazelOpts:
  *
  * Callers should check and emit diagnostics.
  */
-export declare function createProgramAndEmit(fileLoader: FileLoader, options: ts.CompilerOptions, bazelOpts: BazelOptions, files: string[], disabledTsetseRules: string[], angularCompilerOptions?: {
-    [key: string]: unknown;
-}): {
+export declare function createProgramAndEmit(fileLoader: FileLoader, options: ts.CompilerOptions, bazelOpts: BazelOptions, files: string[], disabledTsetseRules: string[]): {
     program?: ts.Program;
     diagnostics: ts.Diagnostic[];
 };
