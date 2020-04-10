@@ -17,7 +17,7 @@ exports_files(["npm_install.bzl"])
 filegroup(
     name = "generate_build_file",
     srcs = [
-        "generate_build_file.js",
+        "index.js",
     ],
     visibility = ["//internal:__subpackages__"],
 )

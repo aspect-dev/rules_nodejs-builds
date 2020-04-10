@@ -39,10 +39,10 @@ try {
 // Store the cache forever to re-use on each build
 let cacheMap = Object.create(null);
 
-// Generate a unique cache ID based on the input/outputOptions
-function computeCacheKey(inputOptions, outputOptions) {
+// Generate a unique cache ID based on the given json data
+function computeCacheKey(cacheKeyData) {
   const hash = crypto.createHash('sha256');
-  const hashContent = JSON.stringify(inputOptions) + JSON.stringify(outputOptions);
+  const hashContent = JSON.stringify(cacheKeyData);
   return hash.update(hashContent).digest('hex');
 }
 
@@ -104,6 +104,10 @@ async function loadConfigFile(configFile) {
   };
 
   await runRollup(configFile, inputOptions, outputOptions);
+
+  // Ensure node isn't caching a previous version of the config file
+  // https://github.com/rollup/rollup/blob/v1.31.0/cli/run/loadConfigFile.ts#L52
+  delete require.cache[require.resolve(cjsConfigFile)];
 
   // Read the config file:
   // https://github.com/rollup/rollup/blob/v1.31.0/cli/run/loadConfigFile.ts#L54-L61

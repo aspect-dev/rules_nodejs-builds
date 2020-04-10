@@ -487,7 +487,7 @@ exports.patcher = (fs = fs$1, root, guards) => {
 exports.escapeFunction = (root, guards) => {
     // ensure root & guards are always absolute.
     root = path.resolve(root);
-    guards = [...guards].map(g => path.resolve(g));
+    guards = guards.map(g => path.resolve(g));
     function isEscape(linkTarget, linkPath) {
         if (!path.isAbsolute(linkPath)) {
             linkPath = path.resolve(linkPath);
@@ -517,7 +517,7 @@ exports.escapeFunction = (root, guards) => {
     function isOutPath(str) {
         return !root || (!str.startsWith(root + path.sep) && str !== root);
     }
-    return { isEscape, isOutPath };
+    return { isEscape, isGuardPath, isOutPath };
 };
 function once(fn) {
     let called = false;
