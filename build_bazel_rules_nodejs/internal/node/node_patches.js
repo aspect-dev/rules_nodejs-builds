@@ -515,7 +515,7 @@ exports.escapeFunction = (root, guards) => {
         return false;
     }
     function isOutPath(str) {
-        return !root || (!str.startsWith(root + path.sep) && str !== root);
+        return !root || (!str.startsWith(root + path.sep) && str !== root) || isGuardPath(linkTarget);
     }
     return { isEscape, isGuardPath, isOutPath };
 };

@@ -5,7 +5,7 @@
     },
     "description": "Adapt Node programs to run as a Bazel worker",
     "license": "Apache-2.0",
-    "version": "1.5.0-47-g0e421f0",
+    "version": "1.5.0-48-g0a29011",
     "repository": {
         "type" : "git",
         "url" : "https://github.com/bazelbuild/rules_nodejs.git",
