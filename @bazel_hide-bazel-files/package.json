@@ -2,7 +2,7 @@
     "name": "@bazel/hide-bazel-files",
     "description": "A tool that hides all Bazel files in node_modules by prefixing them with an underscore",
     "license": "Apache-2.0",
-    "version": "1.5.0-41-g7f5ffa5",
+    "version": "1.5.0-47-g0e421f0",
     "repository": {
         "type" : "git",
         "url" : "https://github.com/bazelbuild/rules_nodejs.git",
