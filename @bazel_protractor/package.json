@@ -2,7 +2,7 @@
   "name": "@bazel/protractor",
   "description": "Run Protractor tests under Bazel",
   "license": "Apache-2.0",
-  "version": "1.5.0-48-g0a29011",
+  "version": "1.5.0-48-ga54a87e",
   "repository": {
       "type" : "git",
       "url" : "https://github.com/bazelbuild/rules_nodejs.git",
