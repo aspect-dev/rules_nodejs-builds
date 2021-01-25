@@ -1,0 +1,15 @@
+
+
+exports_files([
+    "worker_adapter.js",
+])
+
+filegroup(
+    name = "worker",
+    srcs = [
+        "third_party/github.com/bazelbuild/bazel/src/main/protobuf/worker_protocol.proto",
+        "worker.js",
+        "worker_adapter.js",
+    ],
+    visibility = ["//visibility:public"],
+)
