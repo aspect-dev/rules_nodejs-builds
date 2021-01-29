@@ -99,9 +99,6 @@ function deleteDirectory(p) {
 function symlink(target, p) {
     return __awaiter(this, void 0, void 0, function* () {
         log_verbose(`creating symlink ${p} -> ${target} in ${process.cwd()}`);
-        if (!(yield exists(target))) {
-            return false;
-        }
         try {
             yield fs.promises.symlink(target, p, 'junction');
             return true;
@@ -266,6 +263,9 @@ function exists(p) {
     });
 }
 function existsSync(p) {
+    if (!p) {
+        return false;
+    }
     try {
         fs.lstatSync(p);
         return true;
@@ -472,7 +472,7 @@ function main(args, runfiles) {
                 yield mkdirp(path.dirname(m.name));
                 if (m.link) {
                     const modulePath = m.link;
-                    let target = '<package linking failed>';
+                    let target;
                     if (isExecroot) {
                         target = `${startCwd}/${modulePath}`;
                     }
@@ -501,16 +501,31 @@ function main(args, runfiles) {
                                 }
                             }
                         }
-                        catch (_a) {
-                            target = '<runfiles resolution failed>';
+                        catch (err) {
+                            target = undefined;
+                            log_verbose(`runfiles resolve failed for module '${m.name}': ${err.message}`);
                         }
                     }
                     const stats = yield gracefulLstat(m.name);
-                    if (stats !== null && (yield isLeftoverDirectoryFromLinker(stats, m.name))) {
-                        yield createSymlinkAndPreserveContents(stats, m.name, target);
+                    const isLeftOver = (stats !== null && (yield isLeftoverDirectoryFromLinker(stats, m.name)));
+                    if (target && (yield exists(target))) {
+                        if (stats !== null && isLeftOver) {
+                            yield createSymlinkAndPreserveContents(stats, m.name, target);
+                        }
+                        else {
+                            yield symlink(target, m.name);
+                        }
                     }
                     else {
-                        yield symlink(target, m.name);
+                        if (!target) {
+                            log_verbose(`no symlink target found for module ${m.name}`);
+                        }
+                        else {
+                            log_verbose(`potential target ${target} does not exists for module ${m.name}`);
+                        }
+                        if (isLeftOver) {
+                            yield unlink(m.name);
+                        }
                     }
                 }
                 if (m.children) {
