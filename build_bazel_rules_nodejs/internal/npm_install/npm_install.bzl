@@ -218,8 +218,26 @@ def _workspace_root_prefix(repository_ctx):
         return ""
 
 def _copy_file(repository_ctx, f):
-    # template with no substitutions copies the file
-    repository_ctx.template(_workspace_root_path(repository_ctx, f), f, {})
+    to = _workspace_root_path(repository_ctx, f)
+
+    # ensure the destination directory exists
+    if len(to) > 1:
+        dirname = "/".join(to.split("/")[:-1])
+        result = repository_ctx.execute(
+            ["mkdir", "-p", dirname],
+            quiet = repository_ctx.attr.quiet,
+        )
+        if result.return_code:
+            fail("mkdir -p %s failed: \nSTDOUT:\n%s\nSTDERR:\n%s" % (dirname, result.stdout, result.stderr))
+
+    # copy the file; don't use the repository_ctx.template trick with empty substitution as this
+    # does not copy over binary files properly
+    result = repository_ctx.execute(
+        ["cp", "-f", repository_ctx.path(f), to],
+        quiet = repository_ctx.attr.quiet,
+    )
+    if result.return_code:
+        fail("cp -f %s %s failed: \nSTDOUT:\n%s\nSTDERR:\n%s" % (repository_ctx.path(f), to, result.stdout, result.stderr))
 
 def _copy_package_json_file(repository_ctx):
     package_json = repository_ctx.attr.package_json
