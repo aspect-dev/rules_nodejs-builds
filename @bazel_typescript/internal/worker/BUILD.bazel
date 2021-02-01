@@ -1,12 +1,13 @@
 
 
 exports_files([
-    "worker_adapter.js",
+    "index.js",
 ])
 
 filegroup(
-    name = "worker",
+    name = "filegroup",
     srcs = [
+        "index.js",
         "third_party/github.com/bazelbuild/bazel/src/main/protobuf/worker_protocol.proto",
         "worker.js",
         "worker_adapter.js",

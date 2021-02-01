@@ -252,7 +252,7 @@ if [[ "$PWD" == *"/bazel-out/"* ]]; then
   readonly rest=${PWD#*$bazel_out}
   readonly index=$(( ${#PWD} - ${#rest} - ${#bazel_out} ))
   if [[ ${index} < 0 ]]; then
-    echo "No 'bazel-out' folder found in path '${PWD}'!"
+    echo "No 'bazel-out' folder found in path '${PWD}'!" >&2
     exit 1
   fi
   EXECROOT=${PWD:0:${index}}
@@ -268,7 +268,7 @@ fi
 # Tell the node_patches_script that programs should not escape the execroot
 export BAZEL_PATCH_ROOT="${EXECROOT}"
 if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-  echo "BAZEL_PATCH_ROOT=${BAZEL_PATCH_ROOT}"
+  echo "BAZEL_PATCH_ROOT=${BAZEL_PATCH_ROOT}" >&2
 fi
 
 # Set all bazel managed node_modules directories as guarded so no symlinks may
@@ -280,7 +280,7 @@ if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
   # BAZEL_NODE_MODULES_ROOTS is in the format "<path>:<workspace>,<path>:<workspace>"
   # (e.g., "internal/linker/test:npm_internal_linker_test,:npm")
   if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-    echo "BAZEL_NODE_MODULES_ROOTS=${BAZEL_NODE_MODULES_ROOTS}"
+    echo "BAZEL_NODE_MODULES_ROOTS=${BAZEL_NODE_MODULES_ROOTS}" >&2
   fi
   OLDIFS="${IFS}"
   IFS=","
@@ -317,7 +317,7 @@ if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
   done
 fi
 if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-  echo "BAZEL_PATCH_GUARDS=${BAZEL_PATCH_GUARDS}"
+  echo "BAZEL_PATCH_GUARDS=${BAZEL_PATCH_GUARDS}" >&2
 fi
 
 if [ "$PATCH_REQUIRE" = true ]; then
@@ -354,7 +354,7 @@ readonly EXPECTED_EXIT_CODE="TEMPLATED_expected_exit_code"
 
 if [[ -n "${COVERAGE_DIR:-}" ]]; then
   if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-    echo "Turning on node coverage with NODE_V8_COVERAGE=${COVERAGE_DIR}"
+    echo "Turning on node coverage with NODE_V8_COVERAGE=${COVERAGE_DIR}" >&2
   fi
   # Setting NODE_V8_COVERAGE=${COVERAGE_DIR} causes NodeJS to write coverage
   # information our to the COVERAGE_DIR once the process exits
@@ -430,10 +430,10 @@ fi
 # Post process the coverage information after the process has exited
 if [[ -n "${COVERAGE_DIR:-}" ]]; then
   if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-    echo "Running coverage lcov merger script with arguments"
-    echo "  --coverage_dir="${COVERAGE_DIR}""
-    echo "  --output_file="${COVERAGE_OUTPUT_FILE}""
-    echo "  --source_file_manifest="${COVERAGE_MANIFEST}""
+    echo "Running coverage lcov merger script with arguments" >&2
+    echo "  --coverage_dir="${COVERAGE_DIR}"" >&2
+    echo "  --output_file="${COVERAGE_OUTPUT_FILE}"" >&2
+    echo "  --source_file_manifest="${COVERAGE_MANIFEST}"" >&2
   fi
 
   set +e
@@ -442,7 +442,7 @@ if [[ -n "${COVERAGE_DIR:-}" ]]; then
   set -e
 
   if [[ -n "${EXIT_CODE_CAPTURE}" ]]; then
-    echo "${RESULT}" > "${EXIT_CODE_CAPTURE}"
+    echo "${RESULT}" > "${EXIT_CODE_CAPTURE}" >&2
   fi
 fi
 

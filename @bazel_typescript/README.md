@@ -543,7 +543,7 @@ Defaults to `False`
 <pre>
 ts_project(<a href="#ts_project-name">name</a>, <a href="#ts_project-tsconfig">tsconfig</a>, <a href="#ts_project-srcs">srcs</a>, <a href="#ts_project-args">args</a>, <a href="#ts_project-deps">deps</a>, <a href="#ts_project-extends">extends</a>, <a href="#ts_project-allow_js">allow_js</a>, <a href="#ts_project-declaration">declaration</a>, <a href="#ts_project-source_map">source_map</a>,
            <a href="#ts_project-declaration_map">declaration_map</a>, <a href="#ts_project-composite">composite</a>, <a href="#ts_project-incremental">incremental</a>, <a href="#ts_project-emit_declaration_only">emit_declaration_only</a>, <a href="#ts_project-ts_build_info_file">ts_build_info_file</a>, <a href="#ts_project-tsc">tsc</a>,
-           <a href="#ts_project-worker_tsc_bin">worker_tsc_bin</a>, <a href="#ts_project-worker_typescript_module">worker_typescript_module</a>, <a href="#ts_project-validate">validate</a>, <a href="#ts_project-supports_workers">supports_workers</a>, <a href="#ts_project-declaration_dir">declaration_dir</a>,
+           <a href="#ts_project-typescript_package">typescript_package</a>, <a href="#ts_project-typescript_require_path">typescript_require_path</a>, <a href="#ts_project-validate">validate</a>, <a href="#ts_project-supports_workers">supports_workers</a>, <a href="#ts_project-declaration_dir">declaration_dir</a>,
            <a href="#ts_project-out_dir">out_dir</a>, <a href="#ts_project-root_dir">root_dir</a>, <a href="#ts_project-link_workspace_root">link_workspace_root</a>, <a href="#ts_project-kwargs">kwargs</a>)
 </pre>
 
@@ -795,22 +795,21 @@ Or you can pass a custom compiler binary instead.
 
 Defaults to `None`
 
-<h4 id="ts_project-worker_tsc_bin">worker_tsc_bin</h4>
+<h4 id="ts_project-typescript_package">typescript_package</h4>
 
-Label of the TypeScript compiler binary to run when running in worker mode.
+Label of the package containing all data deps of tsc.
 
-For example, `tsc = "@my_deps//node_modules/typescript/bin/tsc"`
-Or you can pass a custom compiler binary instead.
-
-Defaults to `"@npm//:node_modules/typescript/bin/tsc"`
-
-<h4 id="ts_project-worker_typescript_module">worker_typescript_module</h4>
-
-Label of the package containing all data deps of worker_tsc_bin.
-
-For example, `tsc = "@my_deps//typescript"`
+For example, `typescript_package = "@my_deps//typescript"`
 
 Defaults to `"@npm//typescript"`
+
+<h4 id="ts_project-typescript_require_path">typescript_require_path</h4>
+
+Module name which resolves to typescript_package when required
+
+For example, `typescript_require_path = "typescript"`
+
+Defaults to `"typescript"`
 
 <h4 id="ts_project-validate">validate</h4>
 
