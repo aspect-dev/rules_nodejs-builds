@@ -14,6 +14,7 @@ const RULE_TYPE = args[1];
 const PKG_JSON_FILE_PATH = args[2];
 const LOCK_FILE_PATH = args[3];
 const WORKSPACE_ROOT_PREFIX = args[4];
+const WORKSPACE_ROOT_BASE = WORKSPACE_ROOT_PREFIX ? WORKSPACE_ROOT_PREFIX.split('/')[0] : undefined;
 const STRICT_VISIBILITY = ((_a = args[5]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
 const INCLUDED_FILES = args[6] ? args[6].split(',') : [];
 const BAZEL_VERSION = args[7];
@@ -51,7 +52,7 @@ function main() {
     flattenDependencies(pkgs);
     generateBazelWorkspaces(pkgs);
     generateBuildFiles(pkgs);
-    writeFileSync('.bazelignore', `node_modules\n${WORKSPACE_ROOT_PREFIX}node_modules`);
+    writeFileSync('.bazelignore', `node_modules\n${WORKSPACE_ROOT_BASE}`);
 }
 exports.main = main;
 function generateBuildFiles(pkgs) {

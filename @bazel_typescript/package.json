@@ -2,7 +2,7 @@
     "name": "@bazel/typescript",
     "description": "TypeScript rules for Bazel",
     "license": "Apache-2.0",
-    "version": "3.0.0-29-g44b26b8",
+    "version": "3.0.0-29-g28e7f82",
     "repository": {
         "type": "git",
         "url": "https://github.com/bazelbuild/rules_nodejs.git",
