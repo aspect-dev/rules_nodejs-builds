@@ -221,8 +221,9 @@ def _copy_file(repository_ctx, f):
     to = _workspace_root_path(repository_ctx, f)
 
     # ensure the destination directory exists
-    if len(to) > 1:
-        dirname = "/".join(to.split("/")[:-1])
+    to_segments = to.split("/")
+    if len(to_segments) > 1:
+        dirname = "/".join(to_segments[:-1])
         result = repository_ctx.execute(
             ["mkdir", "-p", dirname],
             quiet = repository_ctx.attr.quiet,

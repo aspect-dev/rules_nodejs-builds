@@ -2,7 +2,7 @@
     "name": "@bazel/create",
     "description": "Create a new Bazel workspace",
     "license": "Apache-2.0",
-    "version": "3.0.0-29-gd867768",
+    "version": "3.0.0-29-g1b25bdf",
     "repository": {
         "type" : "git",
         "url" : "https://github.com/bazelbuild/rules_nodejs.git",
