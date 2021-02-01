@@ -1,6 +1,6 @@
 # Snapshot build of rules_nodejs
 
-+ DATE                     : Fri 29 Jan 2021 14:42:36 PST
++ DATE                     : Sun 31 Jan 2021 18:03:57 PST
 + CI                       : false
 + SYSTEM                   : Darwin Kernel Version 19.6.0: Tue Nov 10 00:10:30 PST 2020; root:xnu-6153.141.10~1/RELEASE_X86_64
 + BUILD_VERSION            : 3.0.0
