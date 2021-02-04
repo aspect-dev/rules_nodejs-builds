@@ -1,5 +1,5 @@
 /* THIS FILE GENERATED FROM .ts; see BUILD.bazel */ /* clang-format off */'use strict';
-var _a;
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const path = require("path");
@@ -14,8 +14,8 @@ const RULE_TYPE = args[1];
 const PKG_JSON_FILE_PATH = args[2];
 const LOCK_FILE_PATH = args[3];
 const WORKSPACE_ROOT_PREFIX = args[4];
-const WORKSPACE_ROOT_BASE = WORKSPACE_ROOT_PREFIX ? WORKSPACE_ROOT_PREFIX.split('/')[0] : undefined;
-const STRICT_VISIBILITY = ((_a = args[5]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
+const WORKSPACE_ROOT_BASE = (_a = WORKSPACE_ROOT_PREFIX) === null || _a === void 0 ? void 0 : _a.split('/')[0];
+const STRICT_VISIBILITY = ((_b = args[5]) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
 const INCLUDED_FILES = args[6] ? args[6].split(',') : [];
 const BAZEL_VERSION = args[7];
 const PACKAGE_PATH = args[8];

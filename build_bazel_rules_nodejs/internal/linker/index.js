@@ -98,7 +98,10 @@ function deleteDirectory(p) {
 }
 function symlink(target, p) {
     return __awaiter(this, void 0, void 0, function* () {
-        log_verbose(`creating symlink ${p} -> ${target} in ${process.cwd()}`);
+        if (!path.isAbsolute(target)) {
+            target = path.resolve(process.cwd(), target);
+        }
+        log_verbose(`creating symlink ${p} -> ${target}`);
         try {
             yield fs.promises.symlink(target, p, 'junction');
             return true;
@@ -391,6 +394,24 @@ function main(args, runfiles) {
             process.chdir(execroot);
             log_verbose('changed directory to execroot', execroot);
         }
+        function symlinkWithUnlink(target, p, stats = null) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!path.isAbsolute(target)) {
+                    target = path.resolve(process.cwd(), target);
+                }
+                if (stats === null) {
+                    stats = yield gracefulLstat(p);
+                }
+                if (runfiles.manifest && execroot && stats !== null && stats.isSymbolicLink()) {
+                    const symlinkPath = fs.readlinkSync(p);
+                    if (!path.relative(execroot, symlinkPath).startsWith('..') && symlinkPath !== target) {
+                        log_verbose(`Out-of-date symlink for ${p} to ${symlinkPath} detected. Target should be ${target}. Unlinking.`);
+                        yield unlink(p);
+                    }
+                }
+                return symlink(target, p);
+            });
+        }
         for (const packagePath of Object.keys(roots)) {
             const workspace = roots[packagePath];
             const workspacePath = yield resolveExternalWorkspacePath(workspace, startCwd, isExecroot, execroot, runfiles);
@@ -402,23 +423,23 @@ function main(args, runfiles) {
                     if (!isExecroot) {
                         const runfilesPackagePath = `${startCwd}/${packagePath}`;
                         if (yield exists(runfilesPackagePath)) {
-                            yield symlink(workspaceNodeModules, `${runfilesPackagePath}/node_modules`);
+                            yield symlinkWithUnlink(workspaceNodeModules, `${runfilesPackagePath}/node_modules`);
                             resolvedPackagePath = runfilesPackagePath;
                         }
                     }
                     if (yield exists(packagePath)) {
-                        yield symlink(workspaceNodeModules, `${packagePath}/node_modules`);
+                        yield symlinkWithUnlink(workspaceNodeModules, `${packagePath}/node_modules`);
                         resolvedPackagePath = packagePath;
                     }
                     const packagePathBin = `${bin}/${packagePath}`;
                     if (resolvedPackagePath && (yield exists(packagePathBin))) {
-                        yield symlink(`${resolvedPackagePath}/node_modules`, `${packagePathBin}/node_modules`);
+                        yield symlinkWithUnlink(`${resolvedPackagePath}/node_modules`, `${packagePathBin}/node_modules`);
                     }
                 }
             }
             else {
                 if (yield exists(workspaceNodeModules)) {
-                    yield symlink(workspaceNodeModules, `node_modules`);
+                    yield symlinkWithUnlink(workspaceNodeModules, `node_modules`);
                 }
                 else {
                     log_verbose('no root npm workspace node_modules folder to link to; creating node_modules directory in', process.cwd());
@@ -506,6 +527,9 @@ function main(args, runfiles) {
                             log_verbose(`runfiles resolve failed for module '${m.name}': ${err.message}`);
                         }
                     }
+                    if (target && !path.isAbsolute(target)) {
+                        target = path.resolve(process.cwd(), target);
+                    }
                     const stats = yield gracefulLstat(m.name);
                     const isLeftOver = (stats !== null && (yield isLeftoverDirectoryFromLinker(stats, m.name)));
                     if (target && (yield exists(target))) {
@@ -513,7 +537,7 @@ function main(args, runfiles) {
                             yield createSymlinkAndPreserveContents(stats, m.name, target);
                         }
                         else {
-                            yield symlink(target, m.name);
+                            yield symlinkWithUnlink(target, m.name, stats);
                         }
                     }
                     else {

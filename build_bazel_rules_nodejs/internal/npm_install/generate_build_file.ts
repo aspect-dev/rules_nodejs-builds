@@ -54,7 +54,7 @@ const RULE_TYPE = args[1];
 const PKG_JSON_FILE_PATH = args[2];
 const LOCK_FILE_PATH = args[3];
 const WORKSPACE_ROOT_PREFIX = args[4];
-const WORKSPACE_ROOT_BASE = WORKSPACE_ROOT_PREFIX ? WORKSPACE_ROOT_PREFIX.split('/')[0] : undefined;
+const WORKSPACE_ROOT_BASE = WORKSPACE_ROOT_PREFIX ?.split('/')[0];
 const STRICT_VISIBILITY = args[5]?.toLowerCase() === 'true';
 const INCLUDED_FILES = args[6] ? args[6].split(',') : [];
 const BAZEL_VERSION = args[7];
