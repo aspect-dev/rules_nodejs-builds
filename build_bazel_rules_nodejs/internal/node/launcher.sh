@@ -240,6 +240,13 @@ if [ "$NODE_PATCHES" = true ]; then
   LAUNCHER_NODE_OPTIONS+=( "--require" "$node_patches_script" )
 fi
 
+# Tell the node_patches_script that programs should not escape the execroot
+# Bazel always sets the PWD to execroot/my_wksp so we go up one directory.
+export BAZEL_PATCH_ROOT=$(dirname $PWD)
+if [[ -n "${VERBOSE_LOGS:-}" ]]; then
+  echo "BAZEL_PATCH_ROOT=${BAZEL_PATCH_ROOT}" >&2
+fi
+
 # Find the execroot
 if [[ "$PWD" == *"/bazel-out/"* ]]; then
   # We in runfiles, find the execroot.
@@ -263,12 +270,6 @@ else
   # context then it is safe to assume the node_modules are there and guard that directory if it exists.
   EXECROOT=${PWD}
   RUNFILES_ROOT=
-fi
-
-# Tell the node_patches_script that programs should not escape the execroot
-export BAZEL_PATCH_ROOT="${EXECROOT}"
-if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-  echo "BAZEL_PATCH_ROOT=${BAZEL_PATCH_ROOT}" >&2
 fi
 
 # Set all bazel managed node_modules directories as guarded so no symlinks may
