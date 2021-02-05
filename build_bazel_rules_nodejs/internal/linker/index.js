@@ -447,8 +447,7 @@ function main(args, runfiles) {
                 }
             }
         }
-        const rootNpmWorkspace = roots ? roots[''] : undefined;
-        if (!rootNpmWorkspace) {
+        if (!roots || !roots['']) {
             log_verbose('no root npm workspace; creating node_modules directory in ', process.cwd());
             yield mkdirp('node_modules');
         }

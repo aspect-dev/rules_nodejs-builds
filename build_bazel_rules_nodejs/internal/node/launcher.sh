@@ -306,10 +306,10 @@ if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
         export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${EXECROOT}/external/${root_workspace}/node_modules"
         if [[ "${RUNFILES_ROOT}" ]]; then
           # If in runfiles guard the external workspace location in runfiles as well
-          # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_node_modules/test.sh.runfiles/npm_internal_linker_test/node_modules)
+          # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/npm_internal_linker_test/node_modules)
           export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${root_workspace}/node_modules"
           # and include the legacy runfiles location incase legacy runfiles are enabled
-          # (e.g., /private/.../bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_node_modules/test.sh.runfiles/build_bazel_rules_nodejs/external/npm_internal_linker_test/node_modules)
+          # (e.g., /private/.../bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/build_bazel_rules_nodejs/external/npm_internal_linker_test/node_modules)
           export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/external/${root_workspace}/node_modules"
         fi
       fi

@@ -85,7 +85,7 @@ fine grained npm dependencies.
 
 In most cases, this should be the directory of the package.json file so that the linker links the node_modules
 in the same location they are found in the source tree. In a future release, this will default to the package.json
-directory.""",
+directory. This is planned for 4.0: https://github.com/bazelbuild/rules_nodejs/issues/2451""",
     ),
     "quiet": attr.bool(
         default = True,
