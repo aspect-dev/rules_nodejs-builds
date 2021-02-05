@@ -420,16 +420,21 @@ function main(args, runfiles) {
             if (packagePath) {
                 if (yield exists(workspaceNodeModules)) {
                     let resolvedPackagePath;
-                    if (!isExecroot) {
-                        const runfilesPackagePath = `${startCwd}/${packagePath}`;
-                        if (yield exists(runfilesPackagePath)) {
-                            yield symlinkWithUnlink(workspaceNodeModules, `${runfilesPackagePath}/node_modules`);
-                            resolvedPackagePath = runfilesPackagePath;
-                        }
-                    }
                     if (yield exists(packagePath)) {
                         yield symlinkWithUnlink(workspaceNodeModules, `${packagePath}/node_modules`);
                         resolvedPackagePath = packagePath;
+                    }
+                    if (!isExecroot) {
+                        const runfilesPackagePath = `${startCwd}/${packagePath}`;
+                        if (yield exists(runfilesPackagePath)) {
+                            if (resolvedPackagePath) {
+                                yield symlinkWithUnlink(`${resolvedPackagePath}/node_modules`, `${runfilesPackagePath}/node_modules`);
+                            }
+                            else {
+                                yield symlinkWithUnlink(workspaceNodeModules, `${runfilesPackagePath}/node_modules`);
+                            }
+                            resolvedPackagePath = runfilesPackagePath;
+                        }
                     }
                     const packagePathBin = `${bin}/${packagePath}`;
                     if (resolvedPackagePath && (yield exists(packagePathBin))) {
