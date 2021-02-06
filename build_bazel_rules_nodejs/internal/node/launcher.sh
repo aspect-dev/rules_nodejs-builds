@@ -298,6 +298,11 @@ if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
         # Guard non-root node_modules as well
         # (e.g., /private/.../execroot/build_bazel_rules_nodejs/internal/linker/test/node_modules)
         export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${EXECROOT}/${root_path}/node_modules"
+        if [[ "${RUNFILES_ROOT}" ]]; then
+          # If in runfiles guard the node_modules location in runfiles as well
+          # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/build_bazel_rules_nodejs/internal/linker/test/node_modules)
+          export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/${root_path}/node_modules"
+        fi
       fi
       # TODO: the following guards on the external workspaces may not be necessary and could be removed in the future with care
       if [[ "${root_workspace}" ]] && [[ "${root_workspace}" != "${BAZEL_WORKSPACE}" ]]; then

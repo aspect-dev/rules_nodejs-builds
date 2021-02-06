@@ -489,10 +489,10 @@ exports.patcher = (fs = fs$1, root, guards) => {
         }
     }
 };
-function isGuardPath(g, str) {
-    return str === g || str.startsWith(g + path.sep);
+function isOutPath(root, str) {
+    return !root || (!str.startsWith(root + path.sep) && str !== root);
 }
-exports.isGuardPath = isGuardPath;
+exports.isOutPath = isOutPath;
 exports.escapeFunction = (root, guards) => {
     // ensure root & guards are always absolute.
     root = path.resolve(root);
@@ -505,21 +505,18 @@ exports.escapeFunction = (root, guards) => {
             linkTarget = path.resolve(linkTarget);
         }
         for (const g of guards) {
-            if (!isGuardPath(g, linkTarget) && isGuardPath(g, linkPath)) {
+            if (isOutPath(g, linkTarget) && !isOutPath(g, linkPath)) {
                 // don't escape out of the guard paths
                 return true;
             }
         }
         if (root) {
-            if (isOutPath(linkTarget) && !isOutPath(linkPath)) {
+            if (isOutPath(root, linkTarget) && !isOutPath(root, linkPath)) {
                 // don't escape out of the root
                 return true;
             }
         }
         return false;
-    }
-    function isOutPath(str) {
-        return !root || (!str.startsWith(root + path.sep) && str !== root);
     }
     return { isEscape, isOutPath };
 };
