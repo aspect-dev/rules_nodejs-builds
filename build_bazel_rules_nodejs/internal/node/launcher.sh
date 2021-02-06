@@ -266,22 +266,18 @@ else
 fi
 
 # Tell the node_patches_script that programs should not escape the execroot
-export BAZEL_PATCH_ROOT="${EXECROOT}"
-if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-  echo "BAZEL_PATCH_ROOT=${BAZEL_PATCH_ROOT}" >&2
-fi
-
+export BAZEL_PATCH_ROOTS="${EXECROOT}"
 # Set all bazel managed node_modules directories as guarded so no symlinks may
 # escape and no symlinks may enter.
-# We always guard agains the root node_modules where 1st party deps go.
+# We always guard against the root node_modules where 1st party deps go.
 # (e.g., /private/.../execroot/build_bazel_rules_nodejs/node_modules)
-export BAZEL_PATCH_GUARDS="${EXECROOT},${EXECROOT}/node_modules"
+export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${EXECROOT}/node_modules"
 if [[ "${RUNFILES_ROOT}" ]]; then
   # If in runfiles, guard the runfiles root itself
-  export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}"
+  export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${RUNFILES_ROOT}"
   # If in runfiles guard the node_modules location in runfiles as well
   # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/build_bazel_rules_nodejs/node_modules)
-  export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/node_modules"
+  export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/node_modules"
 fi
 if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
   # BAZEL_NODE_MODULES_ROOTS is in the format "<path>:<workspace>,<path>:<workspace>"
@@ -304,32 +300,32 @@ if [[ -n "${BAZEL_NODE_MODULES_ROOTS:-}" ]]; then
       if [[ "${root_path}" ]]; then
         # Guard non-root node_modules as well
         # (e.g., /private/.../execroot/build_bazel_rules_nodejs/internal/linker/test/node_modules)
-        export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${EXECROOT}/${root_path}/node_modules"
+        export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${EXECROOT}/${root_path}/node_modules"
         if [[ "${RUNFILES_ROOT}" ]]; then
           # If in runfiles guard the node_modules location in runfiles as well
           # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/build_bazel_rules_nodejs/internal/linker/test/node_modules)
-          export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/${root_path}/node_modules"
+          export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/${root_path}/node_modules"
         fi
       fi
       # TODO: the following guards on the external workspaces may not be necessary and could be removed in the future with care
       if [[ "${root_workspace}" ]] && [[ "${root_workspace}" != "${BAZEL_WORKSPACE}" ]]; then
         # Guard the external workspaces if they are not the user workspace
         # (e.g., /private/.../execroot/build_bazel_rules_nodejs/external/npm_internal_linker_test/node_modules)
-        export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${EXECROOT}/external/${root_workspace}/node_modules"
+        export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${EXECROOT}/external/${root_workspace}/node_modules"
         if [[ "${RUNFILES_ROOT}" ]]; then
           # If in runfiles guard the external workspace location in runfiles as well
           # (e.g., /private/.../execroot/build_bazel_rules_nodejs/bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/npm_internal_linker_test/node_modules)
-          export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${root_workspace}/node_modules"
+          export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${RUNFILES_ROOT}/${root_workspace}/node_modules"
           # and include the legacy runfiles location incase legacy runfiles are enabled
           # (e.g., /private/.../bazel-out/darwin-fastbuild/bin/internal/linker/test/multi_linker/test.sh.runfiles/build_bazel_rules_nodejs/external/npm_internal_linker_test/node_modules)
-          export BAZEL_PATCH_GUARDS="${BAZEL_PATCH_GUARDS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/external/${root_workspace}/node_modules"
+          export BAZEL_PATCH_ROOTS="${BAZEL_PATCH_ROOTS},${RUNFILES_ROOT}/${BAZEL_WORKSPACE}/external/${root_workspace}/node_modules"
         fi
       fi
     fi
   done
 fi
 if [[ -n "${VERBOSE_LOGS:-}" ]]; then
-  echo "BAZEL_PATCH_GUARDS=${BAZEL_PATCH_GUARDS}" >&2
+  echo "BAZEL_PATCH_ROOTS=${BAZEL_PATCH_ROOTS}" >&2
 fi
 
 if [ "$PATCH_REQUIRE" = true ]; then

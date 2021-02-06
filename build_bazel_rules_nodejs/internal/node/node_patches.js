@@ -67,17 +67,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // es modules
 
 // tslint:disable-next-line:no-any
-exports.patcher = (fs = fs$1, root, guards) => {
+exports.patcher = (fs = fs$1, roots) => {
     fs = fs || fs$1;
-    root = root || '';
-    guards = guards || [];
-    if (!root) {
+    roots = roots || [];
+    roots = roots.filter(root => fs.existsSync(root));
+    if (!roots.length) {
         if (process.env.VERBOSE_LOGS) {
-            console.error('fs patcher called without root path ' + __filename);
+            console.error('fs patcher called without any valid root paths ' + __filename);
         }
         return;
     }
-    root = fs.realpathSync(root);
     const origRealpath = fs.realpath.bind(fs);
     const origRealpathNative = fs.realpath.native;
     const origLstat = fs.lstat.bind(fs);
@@ -90,7 +89,7 @@ exports.patcher = (fs = fs$1, root, guards) => {
     const origReadlinkSync = fs.readlinkSync.bind(fs);
     const origReaddir = fs.readdir.bind(fs);
     const origReaddirSync = fs.readdirSync.bind(fs);
-    const { isEscape } = exports.escapeFunction(root, guards);
+    const { isEscape } = exports.escapeFunction(roots);
     // tslint:disable-next-line:no-any
     fs.lstat = (...args) => {
         let cb = args.length > 1 ? args[args.length - 1] : undefined;
@@ -401,7 +400,7 @@ exports.patcher = (fs = fs$1, root, guards) => {
                     return reject(err);
                 }
                 if (fs.DEBUG)
-                    console.error(handleCounter + ' opendir: escapes? [target]', path.resolve(target), '[link] ' + linkName, isEscape(path.resolve(target), linkName), root);
+                    console.error(handleCounter + ' opendir: escapes? [target]', path.resolve(target), '[link] ' + linkName, isEscape(path.resolve(target), linkName), roots);
                 if (!isEscape(path.resolve(target), linkName)) {
                     return resolve(v);
                 }
@@ -493,10 +492,9 @@ function isOutPath(root, str) {
     return !root || (!str.startsWith(root + path.sep) && str !== root);
 }
 exports.isOutPath = isOutPath;
-exports.escapeFunction = (root, guards) => {
-    // ensure root & guards are always absolute.
-    root = path.resolve(root);
-    guards = guards.map(g => path.resolve(g));
+exports.escapeFunction = (roots) => {
+    // ensure roots are always absolute
+    roots = roots.map(root => path.resolve(root));
     function isEscape(linkTarget, linkPath) {
         if (!path.isAbsolute(linkPath)) {
             linkPath = path.resolve(linkPath);
@@ -504,13 +502,7 @@ exports.escapeFunction = (root, guards) => {
         if (!path.isAbsolute(linkTarget)) {
             linkTarget = path.resolve(linkTarget);
         }
-        for (const g of guards) {
-            if (isOutPath(g, linkTarget) && !isOutPath(g, linkPath)) {
-                // don't escape out of the guard paths
-                return true;
-            }
-        }
-        if (root) {
+        for (const root of roots) {
             if (isOutPath(root, linkTarget) && !isOutPath(root, linkPath)) {
                 // don't escape out of the root
                 return true;
@@ -652,15 +644,15 @@ exports.subprocess = subprocess.patcher;
  * @fileoverview Description of this file.
  */
 
-const { BAZEL_PATCH_ROOT, BAZEL_PATCH_GUARDS, NP_SUBPROCESS_NODE_DIR, VERBOSE_LOGS } = process.env;
-if (BAZEL_PATCH_ROOT) {
-    const guards = BAZEL_PATCH_GUARDS ? BAZEL_PATCH_GUARDS.split(',') : [];
+const { BAZEL_PATCH_ROOTS, NP_SUBPROCESS_NODE_DIR, VERBOSE_LOGS } = process.env;
+if (BAZEL_PATCH_ROOTS) {
+    const roots = BAZEL_PATCH_ROOTS ? BAZEL_PATCH_ROOTS.split(',') : [];
     if (VERBOSE_LOGS)
-        console.error(`bazel node patches enabled. root: ${BAZEL_PATCH_ROOT} symlinks in this directory will not escape`);
+        console.error(`bazel node patches enabled. roots: ${roots} symlinks in these directories will not escape`);
     const fs = fs$1;
-    src.fs(fs, BAZEL_PATCH_ROOT, guards);
+    src.fs(fs, roots);
 }
 else if (VERBOSE_LOGS) {
-    console.error(`bazel node patches disabled. set environment BAZEL_PATCH_ROOT`);
+    console.error(`bazel node patches disabled. set environment BAZEL_PATCH_ROOTS`);
 }
 src.subprocess(__filename, NP_SUBPROCESS_NODE_DIR);
