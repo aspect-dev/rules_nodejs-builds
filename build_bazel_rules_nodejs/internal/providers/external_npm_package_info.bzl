@@ -46,7 +46,7 @@ def _node_modules_aspect_impl(target, ctx):
                 if path in paths:
                     path_entry = paths[path]
                     if path_entry[0] != workspace:
-                        fail("All npm dependencies at the path '%s' must to come from a single workspace. Found '%s' and '%s'." % (path, workspace, path_entry[0]))
+                        fail("All npm dependencies at the path '%s' must come from a single workspace. Found '%s' and '%s'." % (path, workspace, path_entry[0]))
                     sources_depsets = path_entry[1]
                 sources_depsets.append(dep[ExternalNpmPackageInfo].sources)
                 paths[path] = [workspace, sources_depsets]

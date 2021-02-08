@@ -38,7 +38,7 @@ _ATTRS = {
     ),
     "deps": attr.label_list(),
     "external_npm_package": attr.bool(
-        doc = """Indictates that this js_library target is one or more external npm packages in node_modules.
+        doc = """Internal use only. Indictates that this js_library target is one or more external npm packages in node_modules.
         This is used by the yarn_install & npm_install repository rules for npm dependencies installed by
         yarn & npm. When true, js_library will provide ExternalNpmPackageInfo.
         
@@ -74,7 +74,7 @@ _ATTRS = {
         default = False,
     ),
     "external_npm_package_path": attr.string(
-        doc = """The local workspace path that the linker should link these node_modules to.
+        doc = """Internal use only. The local workspace path that the linker should link these node_modules to.
 
         Used only when external_npm_package is True. If empty, the linker will link these node_modules at the root.""",
         default = "",

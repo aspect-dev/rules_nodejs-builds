@@ -205,7 +205,7 @@ class Runfiles {
         if (result) {
             return result;
         }
-        const e = new Error(`could not resolve modulePath ${modulePath}`);
+        const e = new Error(`could not resolve module ${modulePath}`);
         e.code = 'MODULE_NOT_FOUND';
         throw e;
     }
@@ -403,8 +403,9 @@ function main(args, runfiles) {
                     stats = yield gracefulLstat(p);
                 }
                 if (runfiles.manifest && execroot && stats !== null && stats.isSymbolicLink()) {
-                    const symlinkPath = fs.readlinkSync(p);
-                    if (!path.relative(execroot, symlinkPath).startsWith('..') && symlinkPath !== target) {
+                    const symlinkPath = fs.readlinkSync(p).replace(/\\/g, '/');
+                    if (path.relative(symlinkPath, target) != '' &&
+                        !path.relative(execroot, symlinkPath).startsWith('..')) {
                         log_verbose(`Out-of-date symlink for ${p} to ${symlinkPath} detected. Target should be ${target}. Unlinking.`);
                         yield unlink(p);
                     }
@@ -519,8 +520,8 @@ function main(args, runfiles) {
                         try {
                             target = runfiles.resolve(runfilesPath);
                             if (runfiles.manifest && modulePath.startsWith(`${bin}/`)) {
-                                if (!target.includes(`/${bin}/`)) {
-                                    const e = new Error(`could not resolve modulePath ${modulePath}`);
+                                if (!target.match(BAZEL_OUT_REGEX)) {
+                                    const e = new Error(`could not resolve module ${runfilesPath} in output tree`);
                                     e.code = 'MODULE_NOT_FOUND';
                                     throw e;
                                 }

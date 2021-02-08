@@ -54,7 +54,7 @@ def _compute_node_modules_roots(ctx):
             if path in node_modules_roots:
                 other_workspace = node_modules_roots[path]
                 if other_workspace != workspace:
-                    fail("All npm dependencies at the path '%s' must to come from a single workspace. Found '%s' and '%s'." % (path, other_workspace, workspace))
+                    fail("All npm dependencies at the path '%s' must come from a single workspace. Found '%s' and '%s'." % (path, other_workspace, workspace))
             node_modules_roots[path] = workspace
     return node_modules_roots
 
