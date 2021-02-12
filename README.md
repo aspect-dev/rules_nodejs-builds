@@ -1,13 +1,13 @@
 # Snapshot build of rules_nodejs
 
-+ DATE                     : Wed 10 Feb 2021 22:09:57 PST
++ DATE                     : Thu 11 Feb 2021 23:43:07 PST
 + CI                       : false
 + SYSTEM                   : Darwin Kernel Version 19.6.0: Tue Nov 10 00:10:30 PST 2020; root:xnu-6153.141.10~1/RELEASE_X86_64
 + BUILD_VERSION            : 3.1.0
 + BUILD_BRANCH             : snapshot_builds
-+ GIT_SHA                  : 11105d0772f2f616e6d5296fe441cdd4613226c9
-+ GIT_SHORT_SHA            : 11105d07
-+ GIT_COMMIT_MSG           : 11105d07 build: add snapshot build support
++ GIT_SHA                  : c8ac5feaf7dc9bfe093f37f21d92d5d4413d7687
++ GIT_SHORT_SHA            : c8ac5fea
++ GIT_COMMIT_MSG           : c8ac5fea build: add snapshot build support
 + GIT_COMMITTER_USER_NAME  : Greg Magolan
 + GIT_COMMITTER_USER_EMAIL : greg.magolan@robinhood.com
 + GIT_BRANCH               : snapshot_builds
@@ -18,55 +18,55 @@ Add the following to your WORKSPACE to use the build_bazel_rules_nodejs snapshot
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "build_bazel_rules_nodejs",
-    sha256 = "2f29a4777a62019f5158a9bf1b3f89307748dbfacd36c97de2e0cb29cffcfc07",
-    urls = ["https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/build_bazel_rules_nodejs-snapshot_builds-snapshot.tar.gz"],
+    sha256 = "8e836300e78fb44240b7748e6788eb2f1b5a23fac6047647ba8623c8e345eb5a",
+    urls = ["https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/build_bazel_rules_nodejs-snapshot_builds-snapshot.tar.gz"],
 )
 ```
 
 ## @bazel/worker
 Add the following to your package.json to use the @bazel/worker snapshot build:
 ```
-"@bazel/worker": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_worker-snapshot_builds-snapshot.tar.gz"
+"@bazel/worker": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_worker-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/typescript
 Add the following to your package.json to use the @bazel/typescript snapshot build:
 ```
-"@bazel/typescript": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_typescript-snapshot_builds-snapshot.tar.gz"
+"@bazel/typescript": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_typescript-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/terser
 Add the following to your package.json to use the @bazel/terser snapshot build:
 ```
-"@bazel/terser": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_terser-snapshot_builds-snapshot.tar.gz"
+"@bazel/terser": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_terser-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/rollup
 Add the following to your package.json to use the @bazel/rollup snapshot build:
 ```
-"@bazel/rollup": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_rollup-snapshot_builds-snapshot.tar.gz"
+"@bazel/rollup": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_rollup-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/protractor
 Add the following to your package.json to use the @bazel/protractor snapshot build:
 ```
-"@bazel/protractor": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_protractor-snapshot_builds-snapshot.tar.gz"
+"@bazel/protractor": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_protractor-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/labs
 Add the following to your package.json to use the @bazel/labs snapshot build:
 ```
-"@bazel/labs": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_labs-snapshot_builds-snapshot.tar.gz"
+"@bazel/labs": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_labs-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/jasmine
 Add the following to your package.json to use the @bazel/jasmine snapshot build:
 ```
-"@bazel/jasmine": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_jasmine-snapshot_builds-snapshot.tar.gz"
+"@bazel/jasmine": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_jasmine-snapshot_builds-snapshot.tar.gz"
 ```
 
 ## @bazel/create
 Add the following to your package.json to use the @bazel/create snapshot build:
 ```
-"@bazel/create": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+11105d07/@bazel_create-snapshot_builds-snapshot.tar.gz"
+"@bazel/create": "https://github.com/aspect-dev/rules_nodejs-builds/raw/3.1.0+c8ac5fea/@bazel_create-snapshot_builds-snapshot.tar.gz"
 ```

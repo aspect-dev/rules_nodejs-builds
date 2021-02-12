@@ -87,6 +87,7 @@ def _calculate_root_dir(ctx):
 
     return _join(
         root_path,
+        ctx.label.workspace_root,
         ctx.label.package,
         ctx.attr.root_dir,
     )
@@ -111,7 +112,7 @@ def _ts_project_impl(ctx):
         "--project",
         ctx.file.tsconfig.path,
         "--outDir",
-        _join(ctx.bin_dir.path, ctx.label.package, ctx.attr.out_dir),
+        _join(ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package, ctx.attr.out_dir),
         "--rootDir",
         _calculate_root_dir(ctx),
     ])
@@ -119,7 +120,7 @@ def _ts_project_impl(ctx):
         declaration_dir = ctx.attr.declaration_dir if ctx.attr.declaration_dir else ctx.attr.out_dir
         arguments.add_all([
             "--declarationDir",
-            _join(ctx.bin_dir.path, ctx.label.package, declaration_dir),
+            _join(ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package, declaration_dir),
         ])
 
     # When users report problems, we can ask them to re-build with
