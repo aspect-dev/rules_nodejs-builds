@@ -113,7 +113,7 @@ js_library(
     ),
     # Provide ExternalNpmPackageInfo which is used by downstream rules
     # that use these npm dependencies
-    external_npm_package = True,
+    package_name = "$node_modules$",
 )
 
 # Create a tsc_wrapped compiler rule to use in the ts_library

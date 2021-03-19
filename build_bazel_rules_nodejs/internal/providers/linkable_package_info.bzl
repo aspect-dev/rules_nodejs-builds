@@ -25,6 +25,10 @@ Should be the same as name field in the package's package.json.
 
 In the future, the linker may validate that the names match the name in a package.json file.
 """,
+        "package_path": """The directory in the workspace to link to.
+
+If set, link the 1st party dependencies to the node_modules under the package path specified.
+If unset, the default is to link to the node_modules root of the workspace.""",
         "path": """The path to link to.
 
 Path must be relative to execroot/wksp. It can either an output dir path such as,

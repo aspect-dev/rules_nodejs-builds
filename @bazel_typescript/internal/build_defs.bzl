@@ -30,7 +30,7 @@ _TYPESCRIPT_TYPINGS = Label(
     "//typescript:typescript__typings",
 )
 
-_TYPESCRIPT_SCRIPT_TARGETS = ["es3", "es5", "es2015", "es2016", "es2017", "es2018", "esnext"]
+_TYPESCRIPT_SCRIPT_TARGETS = ["es3", "es5", "es2015", "es2016", "es2017", "es2018", "es2019", "es2020", "esnext"]
 _TYPESCRIPT_MODULE_KINDS = ["none", "commonjs", "amd", "umd", "system", "es2015", "esnext"]
 
 _DEVMODE_TARGET_DEFAULT = "es2015"
@@ -304,6 +304,11 @@ def _ts_library_impl(ctx):
         path = "/".join([p for p in [ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package] if p])
         ts_providers["providers"].append(LinkablePackageInfo(
             package_name = ctx.attr.module_name,
+            # TODO(4.0): ts_library doesn't support multi-linked first party deps yet.
+            # it can be added in 4.0 on the next set of breaking change when we
+            # also add the package_name attribute to separate turning on the linker
+            # from the module_name attribute
+            package_path = "",
             path = path,
             files = ts_providers["typescript"]["es5_sources"],
             _tslibrary = True,

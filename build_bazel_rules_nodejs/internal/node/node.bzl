@@ -26,7 +26,7 @@ load("//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
 load("//internal/common:path_utils.bzl", "strip_external")
 load("//internal/common:preserve_legacy_templated_args.bzl", "preserve_legacy_templated_args")
 load("//internal/common:windows_utils.bzl", "create_windows_native_launcher_script", "is_windows")
-load("//internal/linker:link_node_modules.bzl", "module_mappings_aspect", "write_node_modules_manifest")
+load("//internal/linker:link_node_modules.bzl", "MODULE_MAPPINGS_ASPECT_RESULTS_NAME", "module_mappings_aspect", "write_node_modules_manifest")
 load("//internal/node:node_repositories.bzl", "BUILT_IN_NODE_PLATFORMS")
 
 def _trim_package_node_modules(package_name):
@@ -43,6 +43,8 @@ def _trim_package_node_modules(package_name):
 def _compute_node_modules_roots(ctx):
     """Computes the node_modules root (if any) from data attribute."""
     node_modules_roots = {}
+
+    # Add in roots from third-party deps
     for d in ctx.attr.data:
         if ExternalNpmPackageInfo in d:
             path = d[ExternalNpmPackageInfo].path
@@ -52,6 +54,15 @@ def _compute_node_modules_roots(ctx):
                 if other_workspace != workspace:
                     fail("All npm dependencies at the path '%s' must come from a single workspace. Found '%s' and '%s'." % (path, other_workspace, workspace))
             node_modules_roots[path] = workspace
+
+    # Add in roots for multi-linked first party deps
+    for dep in ctx.attr.data:
+        for k, v in getattr(dep, MODULE_MAPPINGS_ASPECT_RESULTS_NAME, {}).items():
+            map_key_split = k.split(":")
+            package_name = map_key_split[0]
+            package_path = map_key_split[1] if len(map_key_split) > 1 else ""
+            if package_path not in node_modules_roots:
+                node_modules_roots[package_path] = ""
     return node_modules_roots
 
 def _write_require_patch_script(ctx, node_modules_root):
@@ -173,6 +184,10 @@ def _nodejs_binary_impl(ctx):
     # Provide the target name as an environment variable avaiable to all actions for the
     # runfiles helpers to use.
     env_vars = "export BAZEL_TARGET=%s\n" % ctx.label
+
+    # Add all env vars from the ctx attr
+    for [key, value] in ctx.attr.env.items():
+        env_vars += "export %s=%s\n" % (key, expand_location_into_runfiles(ctx, value, ctx.attr.data))
 
     # While we can derive the workspace from the pwd when running locally
     # because it is in the execroot path `execroot/my_wksp`, on RBE the
@@ -447,6 +462,12 @@ nodejs_binary(
 """,
         mandatory = True,
         allow_single_file = True,
+    ),
+    "env": attr.string_dict(
+        doc = """Specifies additional environment variables to set when the target is executed, subject to location
+expansion.
+        """,
+        default = {},
     ),
     "link_workspace_root": attr.bool(
         doc = """Link the workspace root to the bin_dir to support absolute requires like 'my_wksp/path/to/file'.

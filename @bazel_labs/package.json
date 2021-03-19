@@ -1,7 +1,7 @@
 {
     "name": "@bazel/labs",
     "description": "Experimental code. DO NOT DEPEND on this for production use",
-    "version": "3.1.0-17-gc8ac5fe",
+    "version": "3.2.2-14-g24db1bb",
     "license": "Apache-2.0",
     "repository": {
         "type" : "git",
