@@ -10,16 +10,17 @@ var diagnosticsHost = {
     getCanonicalFileName: function (f) { return f; }
 };
 function main(_a) {
+    var _b;
     var tsconfigPath = _a[0], output = _a[1], target = _a[2], attrsStr = _a[3];
     // The Bazel ts_project attributes were json-encoded
     // (on Windows the quotes seem to be quoted wrong, so replace backslash with quotes :shrug:)
     var attrs = JSON.parse(attrsStr.replace(/\\/g, '"'));
     // Parse your typescript settings from the tsconfig
     // This will understand the "extends" semantics.
-    var _b = ts.readConfigFile(tsconfigPath, ts.sys.readFile), config = _b.config, error = _b.error;
+    var _c = ts.readConfigFile(tsconfigPath, ts.sys.readFile), config = _c.config, error = _c.error;
     if (error)
         throw new Error(tsconfigPath + ':' + ts.formatDiagnostic(error, diagnosticsHost));
-    var _c = ts.parseJsonConfigFileContent(config, ts.sys, require('path').dirname(tsconfigPath)), errors = _c.errors, options = _c.options;
+    var _d = ts.parseJsonConfigFileContent(config, ts.sys, require('path').dirname(tsconfigPath)), errors = _d.errors, options = _d.options;
     // We don't pass the srcs to this action, so it can't know if the program has the right sources.
     // Diagnostics look like
     // error TS18002: The 'files' list in config file 'tsconfig.json' is empty.
@@ -62,6 +63,20 @@ function main(_a) {
             }
         }
     }
+    var jsxEmit = (_b = {},
+        _b[ts.JsxEmit.None] = 'none',
+        _b[ts.JsxEmit.Preserve] = 'preserve',
+        _b[ts.JsxEmit.React] = 'react',
+        _b[ts.JsxEmit.ReactNative] = 'react-native',
+        _b);
+    function check_preserve_jsx() {
+        var attr = 'preserve_jsx';
+        var jsxVal = options['jsx'];
+        if ((jsxVal === ts.JsxEmit.Preserve) !== Boolean(attrs[attr])) {
+            failures.push("attribute " + attr + "=" + attrs[attr] + " does not match compilerOptions.jsx=" + jsxEmit[jsxVal]);
+            buildozerCmds.push("set " + attr + " " + (jsxVal === ts.JsxEmit.Preserve ? 'True' : 'False'));
+        }
+    }
     check('allowJs', 'allow_js');
     check('declarationMap', 'declaration_map');
     check('emitDeclarationOnly', 'emit_declaration_only');
@@ -70,6 +85,7 @@ function main(_a) {
     check('declaration');
     check('incremental');
     check('tsBuildInfoFile', 'ts_build_info_file');
+    check_preserve_jsx();
     if (failures.length > 0) {
         console.error("ERROR: ts_project rule " + target + " was configured with attributes that don't match the tsconfig");
         failures.forEach(function (f) { return console.error(' - ' + f); });
@@ -81,7 +97,7 @@ function main(_a) {
     }
     // We have to write an output so that Bazel needs to execute this action.
     // Make the output change whenever the attributes changed.
-    require('fs').writeFileSync(output, "\n// " + process.argv[1] + " checked attributes for " + target + "\n// allow_js:              " + attrs.allow_js + "\n// composite:             " + attrs.composite + "\n// declaration:           " + attrs.declaration + "\n// declaration_map:       " + attrs.declaration_map + "\n// incremental:           " + attrs.incremental + "\n// source_map:            " + attrs.source_map + "\n// emit_declaration_only: " + attrs.emit_declaration_only + "\n// ts_build_info_file:    " + attrs.ts_build_info_file + "\n", 'utf-8');
+    require('fs').writeFileSync(output, "\n// " + process.argv[1] + " checked attributes for " + target + "\n// allow_js:              " + attrs.allow_js + "\n// composite:             " + attrs.composite + "\n// declaration:           " + attrs.declaration + "\n// declaration_map:       " + attrs.declaration_map + "\n// incremental:           " + attrs.incremental + "\n// source_map:            " + attrs.source_map + "\n// emit_declaration_only: " + attrs.emit_declaration_only + "\n// ts_build_info_file:    " + attrs.ts_build_info_file + "\n// preserve_jsx:          " + attrs.preserve_jsx + "\n", 'utf-8');
     return 0;
 }
 if (require.main === module) {

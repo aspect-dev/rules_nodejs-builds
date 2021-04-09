@@ -53,7 +53,7 @@ const PUBLIC_VISIBILITY = '//visibility:public';
 let config: any = {
   generate_local_modules_build_files: false,
   included_files: [],
-  local_deps: {},
+  deps: {},
   package_json: 'package.json',
   package_lock: 'yarn.lock',
   package_path: '',
@@ -139,7 +139,9 @@ function generateBuildFiles(pkgs: Dep[]) {
   generateRootBuildFile(pkgs.filter(pkg => !pkg._isNested))
   pkgs.filter(pkg => !pkg._isNested).forEach(pkg => generatePackageBuildFiles(pkg));
   findScopes().forEach(scope => generateScopeBuildFiles(scope, pkgs));
-  generateLocalDepsBuildFiles(config.local_deps)
+  // Allow this to overwrite any previously generated BUILD files so that user deps take priority
+  // over package manager installed deps
+  generateLocalDepsBuildFiles(config.deps)
 }
 
 function generateLocalDepsBuildFiles(localDeps: {[key: string]: string}) {

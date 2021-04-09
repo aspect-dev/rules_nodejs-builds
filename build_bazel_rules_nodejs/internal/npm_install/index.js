@@ -11,7 +11,7 @@ const PUBLIC_VISIBILITY = '//visibility:public';
 let config = {
     generate_local_modules_build_files: false,
     included_files: [],
-    local_deps: {},
+    deps: {},
     package_json: 'package.json',
     package_lock: 'yarn.lock',
     package_path: '',
@@ -62,7 +62,7 @@ function generateBuildFiles(pkgs) {
     generateRootBuildFile(pkgs.filter(pkg => !pkg._isNested));
     pkgs.filter(pkg => !pkg._isNested).forEach(pkg => generatePackageBuildFiles(pkg));
     findScopes().forEach(scope => generateScopeBuildFiles(scope, pkgs));
-    generateLocalDepsBuildFiles(config.local_deps);
+    generateLocalDepsBuildFiles(config.deps);
 }
 function generateLocalDepsBuildFiles(localDeps) {
     for (const packageName of Object.keys(localDeps)) {

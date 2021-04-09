@@ -40,6 +40,53 @@ If symlink_node_modules is False, the package manager is run in the bazel extern
 repository so all files that the package manager depends on must be listed.
 """,
     ),
+    "deps": attr.string_dict(
+        doc = """Target dependencies to link as npm packages.
+
+A mapping of npm package name to bazel target that is the be linked into node_modules. If `package_path`
+is set, the bazel target will be linked to the node_modules at `package_path` along with other
+3rd party deps from this rule.
+
+For example:
+
+```
+yarn_install(
+    name = "npm",
+    package_json = "//:package.json",
+    package_json = "//:yarn.lock",
+    deps = {
+        "@scope/target": "@//some/scoped/target",
+        "target": "@//some/target",
+    },
+)
+```
+
+Creates targets in the external workspace that can be used by other rules.
+
+NB: targets that are in the main repository must be qualified with `@//` in this context.
+
+The above deps, for example, will create the targets:
+
+```
+@npm//@scope/target
+@npm//target
+```
+
+That can be included as deps by other rules such as and can be required as `@scope/target` and `target` with
+standard node_modules resolution.
+
+```
+jest_test(
+    name = "test",
+    deps = [
+        "@npm//@scope/target",
+        "@npm//target"
+        "@npm//other/dep"
+    ],
+)
+```
+""",
+    ),
     "environment": attr.string_dict(
         doc = """Environment variables to set before calling the package manager.""",
         default = {},
@@ -86,9 +133,6 @@ This attribute applies to both the coarse `@wksp//:node_modules` target
 as well as the fine grained targets such as `@wksp//foo`.
 """,
         default = [],
-    ),
-    "local_deps": attr.string_dict(
-        doc = """TODO""",
     ),
     "manual_build_file_contents": attr.string(
         doc = """Experimental attribute that can be used to override the generated BUILD.bazel file and set its contents manually.
@@ -156,7 +200,7 @@ def _create_build_files(repository_ctx, rule_type, node, lock_file, generate_loc
     generate_config_json = struct(
         generate_local_modules_build_files = generate_local_modules_build_files,
         included_files = repository_ctx.attr.included_files,
-        local_deps = repository_ctx.attr.local_deps,
+        deps = repository_ctx.attr.deps,
         package_json = str(repository_ctx.path(repository_ctx.attr.package_json)),
         package_lock = str(repository_ctx.path(lock_file)),
         package_path = repository_ctx.attr.package_path,

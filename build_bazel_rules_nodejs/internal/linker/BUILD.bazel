@@ -1,7 +1,6 @@
 
 exports_files([
     "index.js",
-    "runfiles_helper.js",
 ])
 
 filegroup(

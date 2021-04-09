@@ -140,7 +140,7 @@ npm_install(
     package_lock_json = "//:package-lock.json",
 )`;
 
-  let workspaceContent = `# Bazel workspace created by @bazel/create 3.2.2-14-g24db1bb
+  let workspaceContent = `# Bazel workspace created by @bazel/create 3.2.3-31-gd56df6a
 
 # Declares that this directory is the root of a Bazel workspace.
 # See https://docs.bazel.build/versions/master/build-ref.html#workspace
@@ -157,8 +157,8 @@ workspace(
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "build_bazel_rules_nodejs",
-    sha256 = "55a25a762fcf9c9b88ab54436581e671bc9f4f523cb5a1bd32459ebec7be68a8",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.2.2/rules_nodejs-3.2.2.tar.gz"],
+    sha256 = "f533eeefc8fe1ddfe93652ec50f82373d0c431f7faabd5e6323f6903195ef227",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.3.0/rules_nodejs-3.3.0.tar.gz"],
 )
 
 ${pkgMgr === 'yarn' ? yarnInstallCmd : npmInstallCmd}`;
