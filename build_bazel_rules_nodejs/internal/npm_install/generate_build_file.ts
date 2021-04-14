@@ -139,18 +139,18 @@ function generateBuildFiles(pkgs: Dep[]) {
   generateRootBuildFile(pkgs.filter(pkg => !pkg._isNested))
   pkgs.filter(pkg => !pkg._isNested).forEach(pkg => generatePackageBuildFiles(pkg));
   findScopes().forEach(scope => generateScopeBuildFiles(scope, pkgs));
-  // Allow this to overwrite any previously generated BUILD files so that user deps take priority
-  // over package manager installed deps
-  generateLocalDepsBuildFiles(config.deps)
+  // Allow this to overwrite any previously generated BUILD files so that user links take priority
+  // over package manager installed npm packages
+  generateLinksBuildFiles(config.links)
 }
 
-function generateLocalDepsBuildFiles(localDeps: {[key: string]: string}) {
-  for (const packageName of Object.keys(localDeps)) {
-    const target = localDeps[packageName];
+function generateLinksBuildFiles(deps: {[key: string]: string}) {
+  for (const packageName of Object.keys(deps)) {
+    const target = deps[packageName];
     const basename = packageName.split('/').pop();
     const starlark = generateBuildFileHeader() +
-        `load("@build_bazel_rules_nodejs//internal/linker:link_adapter.bzl", "link_adapter")
-link_adapter(
+        `load("@build_bazel_rules_nodejs//internal/linker:npm_link.bzl", "npm_link")
+npm_link(
     name = "${basename}",
     target = "${target}",
     package_name = "${packageName}",

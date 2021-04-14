@@ -62,15 +62,15 @@ function generateBuildFiles(pkgs) {
     generateRootBuildFile(pkgs.filter(pkg => !pkg._isNested));
     pkgs.filter(pkg => !pkg._isNested).forEach(pkg => generatePackageBuildFiles(pkg));
     findScopes().forEach(scope => generateScopeBuildFiles(scope, pkgs));
-    generateLocalDepsBuildFiles(config.deps);
+    generateLinksBuildFiles(config.links);
 }
-function generateLocalDepsBuildFiles(localDeps) {
-    for (const packageName of Object.keys(localDeps)) {
-        const target = localDeps[packageName];
+function generateLinksBuildFiles(deps) {
+    for (const packageName of Object.keys(deps)) {
+        const target = deps[packageName];
         const basename = packageName.split('/').pop();
         const starlark = generateBuildFileHeader() +
-            `load("@build_bazel_rules_nodejs//internal/linker:link_adapter.bzl", "link_adapter")
-link_adapter(
+            `load("@build_bazel_rules_nodejs//internal/linker:npm_link.bzl", "npm_link")
+npm_link(
     name = "${basename}",
     target = "${target}",
     package_name = "${packageName}",

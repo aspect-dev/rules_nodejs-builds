@@ -90,6 +90,25 @@ def write_amd_names_shim(actions, amd_names_shim, targets):
                 amd_names_shim_content += "define(\"%s\", function() { return %s });\n" % n
     actions.write(amd_names_shim, amd_names_shim_content)
 
+def _link_path(ctx, all_files):
+    link_path = "/".join([p for p in [ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package] if p])
+
+    # Strip a prefix from the package require path
+    if ctx.attr.strip_prefix:
+        link_path += "/" + ctx.attr.strip_prefix
+
+        # Check that strip_prefix contains at least one src path
+        check_prefix = "/".join([p for p in [ctx.label.package, ctx.attr.strip_prefix] if p])
+        prefix_contains_src = False
+        for file in all_files:
+            if file.short_path.startswith(check_prefix):
+                prefix_contains_src = True
+                break
+        if not prefix_contains_src:
+            fail("js_library %s strip_prefix path does not contain any of the provided sources" % ctx.label)
+
+    return link_path
+
 def _impl(ctx):
     input_files = ctx.files.srcs + ctx.files.named_module_srcs
     all_files = []
@@ -187,39 +206,22 @@ def _impl(ctx):
         ),
     ]
 
-    if ctx.attr.package_name:
-        if ctx.attr.package_name == "$node_modules$":
-            # special case for external npm deps
-            # NB: there is no npm package named "node_modules" nor should there be
-            workspace_name = ctx.label.workspace_name if ctx.label.workspace_name else ctx.workspace_name
-            providers.append(ExternalNpmPackageInfo(
-                direct_sources = depset(transitive = direct_sources_depsets),
-                sources = depset(transitive = npm_sources_depsets),
-                workspace = workspace_name,
-                path = ctx.attr.package_path,
-            ))
-        else:
-            path = "/".join([p for p in [ctx.bin_dir.path, ctx.label.workspace_root, ctx.label.package] if p])
-
-            # Strip a prefix from the package require path
-            if ctx.attr.strip_prefix:
-                path += "/" + ctx.attr.strip_prefix
-
-                # Check that strip_prefix contains at least one src path
-                check_prefix = "/".join([p for p in [ctx.label.package, ctx.attr.strip_prefix] if p])
-                prefix_contains_src = False
-                for file in all_files:
-                    if file.short_path.startswith(check_prefix):
-                        prefix_contains_src = True
-                        break
-                if not prefix_contains_src:
-                    fail("js_library %s strip_prefix path does not contain any of the provided sources" % ctx.label)
-            providers.append(LinkablePackageInfo(
-                package_name = ctx.attr.package_name,
-                package_path = ctx.attr.package_path,
-                path = path,
-                files = depset(transitive = direct_sources_depsets),
-            ))
+    if ctx.attr.package_name == "$node_modules$":
+        # special case for external npm deps
+        workspace_name = ctx.label.workspace_name if ctx.label.workspace_name else ctx.workspace_name
+        providers.append(ExternalNpmPackageInfo(
+            direct_sources = depset(transitive = direct_sources_depsets),
+            sources = depset(transitive = npm_sources_depsets),
+            workspace = workspace_name,
+            path = ctx.attr.package_path,
+        ))
+    else:
+        providers.append(LinkablePackageInfo(
+            package_name = ctx.attr.package_name,
+            package_path = ctx.attr.package_path,
+            path = _link_path(ctx, all_files),
+            files = depset(transitive = direct_sources_depsets),
+        ))
 
     # Don't provide DeclarationInfo if there are no typings to provide.
     # Improves error messaging downstream if DeclarationInfo is required.

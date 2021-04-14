@@ -5,7 +5,7 @@
     },
     "description": "Run Terser JS optimizer under Bazel",
     "license": "Apache-2.0",
-    "version": "3.2.3-31-gd56df6a",
+    "version": "3.3.0-11-gbfe600b",
     "repository": {
         "type" : "git",
         "url" : "https://github.com/bazelbuild/rules_nodejs.git",
