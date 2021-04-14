@@ -140,7 +140,7 @@ npm_install(
     package_lock_json = "//:package-lock.json",
 )`;
 
-  let workspaceContent = `# Bazel workspace created by @bazel/create 3.3.0-11-gbfe600b
+  let workspaceContent = `# Bazel workspace created by @bazel/create 3.3.0-11-g5d5da85
 
 # Declares that this directory is the root of a Bazel workspace.
 # See https://docs.bazel.build/versions/master/build-ref.html#workspace
