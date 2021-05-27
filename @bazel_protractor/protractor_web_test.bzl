@@ -104,6 +104,15 @@ def _protractor_web_test_impl(ctx):
     )
 
     runfiles = [configuration] + configuration_sources + on_prepare_sources
+    server_runfiles = depset()
+
+    # If a server has been specified, add it to the runfiles together with it's required runfiles. This is necessary
+    # as the test executable references the server executable as per `TMPL_server` and executes it.
+    if ctx.executable.server:
+        server_runfiles = depset(
+            [ctx.executable.server],
+            transitive = [ctx.attr.server[DefaultInfo].default_runfiles.files],
+        )
 
     ctx.actions.write(
         output = ctx.outputs.script,
@@ -160,7 +169,7 @@ ${{COMMAND}}
         files = depset([ctx.outputs.script]),
         runfiles = ctx.runfiles(
             files = runfiles,
-            transitive_files = depset(transitive = [files, node_modules]),
+            transitive_files = depset(transitive = [files, node_modules, server_runfiles]),
             # Propagate protractor_bin and its runfiles
             collect_data = True,
             collect_default = True,
@@ -227,7 +236,7 @@ def protractor_web_test(
         server = None,
         tags = [],
         peer_deps = _PROTRACTOR_PEER_DEPS,
-        protractor_entry_point = _PROTRACTOR_ENTRY_POINT,
+        protractor_entry_point = Label(_PROTRACTOR_ENTRY_POINT),
         **kwargs):
     """Runs a protractor test in a browser.
 
@@ -252,7 +261,7 @@ def protractor_web_test(
 
     nodejs_binary(
         name = protractor_bin_name,
-        entry_point = Label(protractor_entry_point),
+        entry_point = protractor_entry_point,
         data = srcs + deps + data + [Label(d) for d in peer_deps],
         testonly = 1,
         # TODO: make protractor binary not depend on monkey-patched require()
@@ -263,8 +272,6 @@ def protractor_web_test(
     # Our binary dependency must be in data[] for collect_data to pick it up
     # FIXME: maybe we can just ask :protractor_bin_name for its runfiles attr
     web_test_data = data + [":" + protractor_bin_name]
-    if server:
-        web_test_data += [server]
 
     _protractor_web_test(
         name = name,

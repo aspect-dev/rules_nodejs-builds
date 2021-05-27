@@ -68,6 +68,8 @@ function main(_a) {
         _b[ts.JsxEmit.Preserve] = 'preserve',
         _b[ts.JsxEmit.React] = 'react',
         _b[ts.JsxEmit.ReactNative] = 'react-native',
+        _b[ts.JsxEmit.ReactJSX] = 'react-jsx',
+        _b[ts.JsxEmit.ReactJSXDev] = 'react-jsx-dev',
         _b);
     function check_preserve_jsx() {
         var attr = 'preserve_jsx';

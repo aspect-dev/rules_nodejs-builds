@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PropertyWriteEngine = exports.matchPropertyWrite = void 0;
 const ts = require("typescript");
 const ast_tools_1 = require("../ast_tools");
 const property_engine_1 = require("./property_engine");

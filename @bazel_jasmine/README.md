@@ -1,7 +1,7 @@
+
 # Jasmine rules for Bazel
 
 The Jasmine rules run tests under the Jasmine framework with Bazel.
-
 
 ## Installation
 

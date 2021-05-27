@@ -18,10 +18,12 @@ load(
     "//:providers.bzl",
     "DeclarationInfo",
     "ExternalNpmPackageInfo",
+    "JSEcmaScriptModuleInfo",
     "JSModuleInfo",
     "JSNamedModuleInfo",
     "LinkablePackageInfo",
     "declaration_info",
+    "js_ecma_script_module_info",
     "js_module_info",
     "js_named_module_info",
 )
@@ -164,6 +166,7 @@ def _impl(ctx):
 
     files_depsets = [files_depset]
     npm_sources_depsets = [files_depset]
+    direct_ecma_script_module_depsets = [files_depset]
     direct_sources_depsets = [files_depset]
     direct_named_module_sources_depsets = [named_module_files_depset]
     typings_depsets = [typings_depset]
@@ -173,6 +176,9 @@ def _impl(ctx):
         if ExternalNpmPackageInfo in dep:
             npm_sources_depsets.append(dep[ExternalNpmPackageInfo].sources)
         else:
+            if JSEcmaScriptModuleInfo in dep:
+                direct_ecma_script_module_depsets.append(dep[JSEcmaScriptModuleInfo].direct_sources)
+                direct_sources_depsets.append(dep[JSEcmaScriptModuleInfo].direct_sources)
             if JSModuleInfo in dep:
                 js_files_depsets.append(dep[JSModuleInfo].direct_sources)
                 direct_sources_depsets.append(dep[JSModuleInfo].direct_sources)
@@ -196,6 +202,10 @@ def _impl(ctx):
             ),
         ),
         AmdNamesInfo(names = ctx.attr.amd_names),
+        js_ecma_script_module_info(
+            sources = depset(transitive = direct_ecma_script_module_depsets),
+            deps = ctx.attr.deps,
+        ),
         js_module_info(
             sources = depset(transitive = js_files_depsets),
             deps = ctx.attr.deps,
@@ -206,7 +216,7 @@ def _impl(ctx):
         ),
     ]
 
-    if ctx.attr.package_name == "$node_modules$":
+    if ctx.attr.package_name == "$node_modules$" or ctx.attr.package_name == "$node_modules_da$":
         # special case for external npm deps
         workspace_name = ctx.label.workspace_name if ctx.label.workspace_name else ctx.workspace_name
         providers.append(ExternalNpmPackageInfo(
@@ -214,6 +224,7 @@ def _impl(ctx):
             sources = depset(transitive = npm_sources_depsets),
             workspace = workspace_name,
             path = ctx.attr.package_path,
+            directory_artifacts = (ctx.attr.package_name == "$node_modules_da$"),
         ))
     else:
         providers.append(LinkablePackageInfo(
@@ -223,10 +234,19 @@ def _impl(ctx):
             files = depset(transitive = direct_sources_depsets),
         ))
 
-    # Don't provide DeclarationInfo if there are no typings to provide.
-    # Improves error messaging downstream if DeclarationInfo is required.
     if len(typings) or len(typings_depsets) > 1:
+        # Don't provide DeclarationInfo if there are no typings to provide.
+        # Improves error messaging downstream if DeclarationInfo is required.
         decls = depset(transitive = typings_depsets)
+        providers.append(declaration_info(
+            declarations = decls,
+            deps = ctx.attr.deps,
+        ))
+        providers.append(OutputGroupInfo(types = decls))
+    elif ctx.attr.package_name == "$node_modules_da$":
+        # If this is directory artifacts npm package then always provide declaration_info
+        # since we can't scan through files
+        decls = depset(transitive = files_depsets)
         providers.append(declaration_info(
             declarations = decls,
             deps = ctx.attr.deps,
@@ -389,7 +409,7 @@ def js_library(
         # module_name for legacy ts_library module_mapping support
         # which is still being used in a couple of tests
         # TODO: remove once legacy module_mapping is removed
-        module_name = package_name if package_name != "$node_modules$" else None,
+        module_name = package_name if package_name != "$node_modules$" and package_name != "$node_modules_da$" else None,
         is_windows = select({
             "@bazel_tools//src/conditions:host_windows": True,
             "//conditions:default": False,

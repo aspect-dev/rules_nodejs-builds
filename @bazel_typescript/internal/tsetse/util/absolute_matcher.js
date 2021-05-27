@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.AbsoluteMatcher = void 0;
 const ast_tools_1 = require("./ast_tools");
 const PATH_NAME_FORMAT = '[/\\.\\w\\d_-]+';
 const JS_IDENTIFIER_FORMAT = '[\\w\\d_-]+';

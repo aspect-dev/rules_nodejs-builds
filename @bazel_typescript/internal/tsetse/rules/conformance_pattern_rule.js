@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ErrorCode = exports.PatternKind = exports.ConformancePatternRule = void 0;
 const error_code_1 = require("../error_code");
-exports.ErrorCode = error_code_1.ErrorCode;
+Object.defineProperty(exports, "ErrorCode", { enumerable: true, get: function () { return error_code_1.ErrorCode; } });
 const pattern_config_1 = require("../util/pattern_config");
-exports.PatternKind = pattern_config_1.PatternKind;
+Object.defineProperty(exports, "PatternKind", { enumerable: true, get: function () { return pattern_config_1.PatternKind; } });
 const name_engine_1 = require("../util/pattern_engines/name_engine");
 const property_engine_1 = require("../util/pattern_engines/property_engine");
 const property_non_constant_write_engine_1 = require("../util/pattern_engines/property_non_constant_write_engine");

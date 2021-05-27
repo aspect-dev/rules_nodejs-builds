@@ -1,8 +1,8 @@
+
 # esbuild rules for Bazel
 
 The esbuild rules runs the [esbuild](https://github.com/evanw/esbuild) bundler tool with Bazel.
 esbuild is an extremely fast JavaScript bundler written in Go, its [current benchmarks](https://esbuild.github.io/faq/#benchmark-details) show it can be 320x faster that other bundlers
-
 
 ## Installation
 
@@ -19,7 +19,7 @@ yarn add -D @bazel/esbuild
 Add an `http_archive` fetching the esbuild binary for each platform that you need to support. 
 
 ```python
-_ESBUILD_VERSION = "0.11.6"  # reminder: update SHAs below when changing this value
+_ESBUILD_VERSION = "0.12.1"  # reminder: update SHAs below when changing this value
 http_archive(
     name = "esbuild_darwin",
     urls = [
@@ -27,7 +27,7 @@ http_archive(
     ],
     strip_prefix = "package",
     build_file_content = """exports_files(["bin/esbuild"])""",
-    sha256 = "2b06365b075b854654fc9ed26fcd48a0c38947e1c8d5151ce400cd1e173bb138",
+    sha256 = "efb34692bfa34db61139eb8e46cd6cf767a42048f41c8108267279aaf58a948f",
 )
 
 http_archive(
@@ -37,7 +37,7 @@ http_archive(
     ],
     strip_prefix = "package",
     build_file_content = """exports_files(["esbuild.exe"])""",
-    sha256 = "ddab1121833f0a12ca4fb3e288231e058f5526310671e84c0a9aa575340bb20b",
+    sha256 = "10439647b11c7fd1d9647fd98d022fe2188b4877d2d0b4acbe857f4e764b17a9",
 )
 
 http_archive(
@@ -47,7 +47,7 @@ http_archive(
     ],
     strip_prefix = "package",
     build_file_content = """exports_files(["bin/esbuild"])""",
-    sha256 = "34612e3e15e6c31d9d742d3fd677bd5208b7e5c0ee9c93809999138c6c5c1039",
+    sha256 = "de8409b90ec3c018ffd899b49ed5fc462c61b8c702ea0f9da013e0e1cd71549a",
 )
 ```
 
@@ -117,9 +117,9 @@ This will create an output directory containing all the code split chunks, along
 **USAGE**
 
 <pre>
-esbuild(<a href="#esbuild-name">name</a>, <a href="#esbuild-args">args</a>, <a href="#esbuild-define">define</a>, <a href="#esbuild-deps">deps</a>, <a href="#esbuild-entry_point">entry_point</a>, <a href="#esbuild-external">external</a>, <a href="#esbuild-format">format</a>, <a href="#esbuild-launcher">launcher</a>, <a href="#esbuild-link_workspace_root">link_workspace_root</a>,
-        <a href="#esbuild-max_threads">max_threads</a>, <a href="#esbuild-minify">minify</a>, <a href="#esbuild-output">output</a>, <a href="#esbuild-output_css">output_css</a>, <a href="#esbuild-output_dir">output_dir</a>, <a href="#esbuild-output_map">output_map</a>, <a href="#esbuild-platform">platform</a>, <a href="#esbuild-sourcemap">sourcemap</a>,
-        <a href="#esbuild-sources_content">sources_content</a>, <a href="#esbuild-srcs">srcs</a>, <a href="#esbuild-target">target</a>, <a href="#esbuild-tool">tool</a>)
+esbuild(<a href="#esbuild-name">name</a>, <a href="#esbuild-args">args</a>, <a href="#esbuild-define">define</a>, <a href="#esbuild-deps">deps</a>, <a href="#esbuild-entry_point">entry_point</a>, <a href="#esbuild-entry_points">entry_points</a>, <a href="#esbuild-external">external</a>, <a href="#esbuild-format">format</a>, <a href="#esbuild-launcher">launcher</a>,
+        <a href="#esbuild-link_workspace_root">link_workspace_root</a>, <a href="#esbuild-max_threads">max_threads</a>, <a href="#esbuild-minify">minify</a>, <a href="#esbuild-output">output</a>, <a href="#esbuild-output_css">output_css</a>, <a href="#esbuild-output_dir">output_dir</a>, <a href="#esbuild-output_map">output_map</a>,
+        <a href="#esbuild-platform">platform</a>, <a href="#esbuild-sourcemap">sourcemap</a>, <a href="#esbuild-sources_content">sources_content</a>, <a href="#esbuild-srcs">srcs</a>, <a href="#esbuild-target">target</a>, <a href="#esbuild-tool">tool</a>)
 </pre>
 
 Runs the esbuild bundler under Bazel
@@ -167,8 +167,20 @@ Defaults to `[]`
 
 <h4 id="esbuild-entry_point">entry_point</h4>
 
-(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>, mandatory*): The bundle's entry point (e.g. your main.js or app.js or index.js)
+(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>*): The bundle's entry point (e.g. your main.js or app.js or index.js)
 
+This is a shortcut for the `entry_points` attribute with a single entry.
+Specify either this attribute or `entry_point`, but not both.
+
+Defaults to `None`
+
+<h4 id="esbuild-entry_points">entry_points</h4>
+
+(*<a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a>*): The bundle's entry points (e.g. your main.js or app.js or index.js)
+
+Specify either this attribute or `entry_point`, but not both.
+
+Defaults to `[]`
 
 <h4 id="esbuild-external">external</h4>
 
@@ -181,7 +193,7 @@ Defaults to `[]`
 <h4 id="esbuild-format">format</h4>
 
 (*String*): The output format of the bundle, defaults to iife when platform is browser
-and cjs when platform is node. If performing code splitting, defaults to esm.
+and cjs when platform is node. If performing code splitting or multiple entry_points are specified, defaults to esm.
 
 See https://esbuild.github.io/api/#format for more details
 
@@ -234,9 +246,9 @@ file is named 'foo.js', you should set this to 'foo.css'.
 
 <h4 id="esbuild-output_dir">output_dir</h4>
 
-(*Boolean*): If true, esbuild produces an output directory containing all the output files from code splitting
+(*Boolean*): If true, esbuild produces an output directory containing all the output files from code splitting for multiple entry points
 
-See https://esbuild.github.io/api/#splitting for more details
+See https://esbuild.github.io/api/#splitting and https://esbuild.github.io/api/#entry-points for more details
 
 Defaults to `False`
 
@@ -278,7 +290,7 @@ Defaults to `[]`
 <h4 id="esbuild-target">target</h4>
 
 (*String*): Environment target (e.g. es2017, chrome58, firefox57, safari11, 
-edge16, node10, default esnext)
+edge16, node10, esnext). Default es2015.
 
 See https://esbuild.github.io/api/#target for more details
 

@@ -4,6 +4,7 @@
  * See http://tsetse.info/must-type-assert-json-parse
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Rule = void 0;
 const ts = require("typescript");
 const error_code_1 = require("../error_code");
 const rule_1 = require("../rule");

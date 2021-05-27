@@ -4,6 +4,7 @@
  * a TypeScript AST, used by JSConformance rules and elsewhere.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.logASTWalkError = exports.isNameInDeclaration = exports.isPartOfImportStatement = exports.isPartOfTypeDeclaration = exports.dealias = exports.isInStockLibraries = exports.shouldExamineNode = exports.findInChildren = exports.parents = exports.debugLog = exports.setDebug = void 0;
 const ts = require("typescript");
 /**
  * Triggers increased verbosity in the rules.

@@ -4,6 +4,7 @@
  * import graph discovered in typescript inputs.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.constructManifest = void 0;
 /**
  * Recursively walk the import graph provided by tsickle, populating entries
  * in the result map such that if foo imports bar, foo will appear before bar

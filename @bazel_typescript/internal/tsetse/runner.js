@@ -3,6 +3,7 @@
  * @fileoverview Runner is the entry point of running Tsetse checks in compiler.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerRules = exports.Plugin = void 0;
 const checker_1 = require("./checker");
 const ban_expect_truthy_promise_rule_1 = require("./rules/ban_expect_truthy_promise_rule");
 const ban_promise_as_condition_rule_1 = require("./rules/ban_promise_as_condition_rule");

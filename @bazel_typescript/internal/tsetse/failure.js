@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.fixToString = exports.Failure = void 0;
 const ts = require("typescript");
 /**
  * A Tsetse check Failure is almost identical to a Diagnostic from TypeScript

@@ -5,6 +5,7 @@
  * expect(await returnsPromise()).toBeTruthy() and forgot the await.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Rule = void 0;
 const tsutils = require("tsutils");
 const ts = require("typescript");
 const error_code_1 = require("../error_code");

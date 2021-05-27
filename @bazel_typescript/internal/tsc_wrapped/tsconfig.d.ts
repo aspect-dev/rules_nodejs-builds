@@ -191,6 +191,10 @@ export declare function resolveNormalizedPath(...segments: string[]): string;
  * @param tsconfigFile path to tsconfig, relative to process.cwd() or absolute
  * @return configuration parsed from the file, or error diagnostics
  */
-export declare function parseTsconfig(tsconfigFile: string, host?: ts.ParseConfigHost): [ParsedTsConfig | null, ts.Diagnostic[] | null, {
-    target: string;
-}];
+export declare function parseTsconfig(tsconfigFile: string, host?: ts.ParseConfigHost): [
+    ParsedTsConfig | null,
+    ts.Diagnostic[] | null,
+    {
+        target: string;
+    }
+];

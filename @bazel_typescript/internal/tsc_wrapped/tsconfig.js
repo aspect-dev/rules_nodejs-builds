@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseTsconfig = exports.resolveNormalizedPath = void 0;
 const path = require("path");
 const ts = require("typescript");
 /**

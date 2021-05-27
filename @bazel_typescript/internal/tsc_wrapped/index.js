@@ -1,12 +1,19 @@
 "use strict";
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./tsconfig"));
-__export(require("./cache"));
-__export(require("./compiler_host"));
-__export(require("./diagnostics"));
-__export(require("./worker"));
-__export(require("./manifest"));
-__export(require("./plugin_api"));
+__exportStar(require("./tsconfig"), exports);
+__exportStar(require("./cache"), exports);
+__exportStar(require("./compiler_host"), exports);
+__exportStar(require("./diagnostics"), exports);
+__exportStar(require("./worker"), exports);
+__exportStar(require("./manifest"), exports);
+__exportStar(require("./plugin_api"), exports);

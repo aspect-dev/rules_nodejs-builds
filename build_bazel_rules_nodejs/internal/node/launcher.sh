@@ -125,8 +125,13 @@ else
 
   case "${machine}" in
     # The following paths must match up with _download_node in node_repositories
-    darwin) readonly node_toolchain="nodejs_darwin_amd64/bin/nodejs/bin/node" ;;
     windows) readonly node_toolchain="nodejs_windows_amd64/bin/nodejs/node.exe" ;;
+    darwin)
+      case "${unameArch}" in
+        x86_64*) readonly node_toolchain="nodejs_darwin_amd64/bin/nodejs/bin/node" ;;
+        *) readonly node_toolchain="nodejs_darwin_arm64/bin/nodejs/bin/node" ;;
+      esac
+      ;;
     *)
       case "${unameArch}" in
         aarch64*) readonly node_toolchain="nodejs_linux_arm64/bin/nodejs/bin/node" ;;
@@ -187,9 +192,9 @@ for ARG in ${ALL_ARGS[@]+"${ALL_ARGS[@]}"}; do
     # Supply custom linker arguments for first-party dependencies
     --bazel_node_modules_manifest=*) MODULES_MANIFEST="${ARG#--bazel_node_modules_manifest=}" ;;
     # Captures stdout of the node process to the file specified
-    --bazel_capture_stdout=*) STDOUT_CAPTURE="${ARG#--bazel_capture_stdout=}" ;;
+    --bazel_capture_stdout=*) STDOUT_CAPTURE="${PWD}/${ARG#--bazel_capture_stdout=}" ;;
     # Captures stderr of the node process to the file specified
-    --bazel_capture_stderr=*) STDERR_CAPTURE="${ARG#--bazel_capture_stderr=}" ;;
+    --bazel_capture_stderr=*) STDERR_CAPTURE="${PWD}/${ARG#--bazel_capture_stderr=}" ;;
     # Captures the exit code of the node process to the file specified
     --bazel_capture_exit_code=*) EXIT_CODE_CAPTURE="${ARG#--bazel_capture_exit_code=}" ;;
     # Disable the node_loader.js monkey patches for require()
@@ -356,6 +361,9 @@ else
   # Always set up source-map-support using our vendored copy, just like the require_patch_script
   register_source_map_support=$(rlocation build_bazel_rules_nodejs/third_party/github.com/source-map-support/register.js)
   LAUNCHER_NODE_OPTIONS+=( "--require" "${register_source_map_support}" )
+fi
+if [[ -n "TEMPLATED_entry_point_main" ]]; then
+  MAIN="${MAIN}/"TEMPLATED_entry_point_main
 fi
 
 # The EXPECTED_EXIT_CODE lets us write bazel tests which assert that

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ErrorCode = void 0;
 /**
  * Error codes for tsetse checks.
  *

@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createProxy = void 0;
 /**
  * The proxy design pattern, allowing us to customize behavior of the delegate
  * object.

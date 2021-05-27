@@ -16,6 +16,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.runWorkerLoop = exports.runAsWorker = exports.log = exports.debug = exports.DEBUG = void 0;
 const path = require("path");
 const protobufjs = require("protobufjs");
 // Equivalent of running node with --expose-gc

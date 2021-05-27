@@ -1,12 +1,11 @@
+
 # Protractor rules for Bazel
 
 The Protractor rules run tests under the Protractor framework with Bazel.
 
-
 ## Installation
 
 Add the `@bazel/protractor` npm package to your `devDependencies` in `package.json`.
-
 
 
 ## protractor_web_test
@@ -84,12 +83,11 @@ Defaults to `["@build_bazel_rules_nodejs//@bazel/protractor", "@npm//protractor"
 A label providing the protractor entry point
 Default to `:node_modules/protractor/bin/protractor`.
 
-Defaults to `"@npm//:node_modules/protractor/bin/protractor"`
+Defaults to `Label("@npm//:node_modules/protractor/bin/protractor")`
 
 <h4 id="protractor_web_test-kwargs">kwargs</h4>
 
 passed through to `protractor_web_test`
-
 
 
 

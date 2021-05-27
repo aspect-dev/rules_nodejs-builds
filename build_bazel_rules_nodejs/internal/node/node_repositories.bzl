@@ -36,6 +36,7 @@ _YARN_VERSIONS = {
     "1.13.0": ("yarn-v1.13.0.tar.gz", "yarn-v1.13.0", "125d40ebf621ebb08e3f66a618bd2cc5cd77fa317a312900a1ab4360ed38bf14"),
     "1.19.1": ("yarn-v1.19.1.tar.gz", "yarn-v1.19.1", "34293da6266f2aae9690d59c2d764056053ff7eebc56b80b8df05010c3da9343"),
     "1.22.4": ("yarn-v1.22.4.tar.gz", "yarn-v1.22.4", "bc5316aa110b2f564a71a3d6e235be55b98714660870c5b6b2d2d3f12587fb58"),
+    "1.22.10": ("yarn-v1.22.10.tar.gz", "yarn-v1.22.10", "7e433d4a77e2c79e6a7ae4866782608a8e8bcad3ec6783580577c59538381a6e"),
     # When adding a new version. please update /docs/install.md
 }
 
@@ -114,6 +115,8 @@ node_repositories(
 
 Will download yarn from https://github.com/yarnpkg/yarn/releases/download/v1.2.1/yarn-v1.12.1.tar.gz
 and expect the file to have sha256sum `09bea8f4ec41e9079fa03093d3b2db7ac5c5331852236d63815f8df42b3ba88d`.
+
+If you don't use Yarn at all, you can skip downloading it by setting `yarn_urls = []`.
 
 ### Using a local version
 
@@ -220,6 +223,8 @@ By default, if this attribute has no items, we'll use a list of all public NodeJ
         doc = """custom list of URLs to use to download Yarn
 
 Each entry is a template, similar to the `node_urls` attribute, using `yarn_version` and `yarn_repositories` in the substitutions.
+
+If this list is empty, we won't download yarn at all.
 """,
     ),
     "yarn_version": attr.string(
@@ -313,6 +318,14 @@ def _download_yarn(repository_ctx):
     Args:
       repository_ctx: The repository rule context
     """
+    yarn_urls = repository_ctx.attr.yarn_urls
+
+    # If there are no URLs to download yarn, skip the download
+    if not len(yarn_urls):
+        repository_ctx.file("yarn_info", content = "# no yarn urls")
+        return
+
+    # If yarn is vendored locally, we still need the info file but can skip downloading
     if repository_ctx.attr.vendored_yarn:
         repository_ctx.file("yarn_info", content = "# vendored_yarn: {vendored_yarn}".format(
             vendored_yarn = repository_ctx.attr.vendored_yarn,
@@ -326,7 +339,6 @@ def _download_yarn(repository_ctx):
     # The size of _YARN_VERSIONS constant is huge and not useful to document.
     if not yarn_repositories.items():
         yarn_repositories = _YARN_VERSIONS
-    yarn_urls = repository_ctx.attr.yarn_urls
 
     if yarn_version in yarn_repositories:
         filename, strip_prefix, sha256 = yarn_repositories[yarn_version]
@@ -418,9 +430,16 @@ def _prepare_node(repository_ctx):
     npx_bin_label = ("%s/lib/node_modules/npm/bin/npx-cli.js" % node_package) if not is_windows else ("%s/npx.cmd" % node_package)
 
     # Use the yarn.js script as the bin for oxs & linux so there are no symlink issues with `%s/bin/npm`
-    yarn_bin = ("%s/bin/yarn.js" % yarn_path) if not is_windows else ("%s/yarn.cmd" % yarn_path)
-    yarn_bin_label = ("%s/bin/yarn.js" % yarn_package) if not is_windows else ("%s/yarn.cmd" % yarn_package)
+    yarn_bin = ("%s/bin/yarn.js" % yarn_path) if not is_windows else ("%s/bin/yarn.cmd" % yarn_path)
+    yarn_bin_label = ("%s/bin/yarn.js" % yarn_package) if not is_windows else ("%s/bin/yarn.cmd" % yarn_package)
     yarn_script = "%s/bin/yarn.js" % yarn_path
+
+    # Ensure that the "vendored" binaries are resolved
+    # Just requesting their path from the repository context is enough to eager-load them
+    if repository_ctx.attr.vendored_node:
+        repository_ctx.path(Label(node_bin_label))
+    if repository_ctx.attr.vendored_yarn:
+        repository_ctx.path(Label(yarn_bin_label))
 
     entry_ext = ".cmd" if is_windows else ""
     node_entry = "bin/node%s" % entry_ext

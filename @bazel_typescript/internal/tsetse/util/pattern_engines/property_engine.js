@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PropertyEngine = exports.matchProperty = void 0;
 const ast_tools_1 = require("../ast_tools");
 const property_matcher_1 = require("../property_matcher");
 const pattern_engine_1 = require("./pattern_engine");

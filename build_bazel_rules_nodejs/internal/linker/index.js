@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = exports.reduceModules = void 0;
 const fs = require("fs");
 const path = require("path");
 const { runfiles: _defaultRunfiles, _BAZEL_OUT_REGEX } = require('../runfiles/index.js');
@@ -49,6 +50,30 @@ function gracefulLstat(path) {
         }
     });
 }
+function gracefulReadlink(path) {
+    try {
+        return fs.readlinkSync(path);
+    }
+    catch (e) {
+        if (e.code === 'ENOENT') {
+            return null;
+        }
+        throw e;
+    }
+}
+function gracefulReaddir(path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            return yield fs.promises.readdir(path);
+        }
+        catch (e) {
+            if (e.code === 'ENOENT') {
+                return [];
+            }
+            throw e;
+        }
+    });
+}
 function unlink(moduleName) {
     return __awaiter(this, void 0, void 0, function* () {
         const stat = yield gracefulLstat(moduleName);
@@ -68,11 +93,12 @@ function unlink(moduleName) {
 function deleteDirectory(p) {
     return __awaiter(this, void 0, void 0, function* () {
         log_verbose("Deleting children of", p);
-        for (let entry of yield fs.promises.readdir(p)) {
+        for (let entry of yield gracefulReaddir(p)) {
             const childPath = path.join(p, entry);
             const stat = yield gracefulLstat(childPath);
             if (stat === null) {
-                throw Error(`File does not exist, but is listed as directory entry: ${childPath}`);
+                log_verbose(`File does not exist, but is listed as directory entry: ${childPath}`);
+                continue;
             }
             if (stat.isDirectory()) {
                 yield deleteDirectory(childPath);
@@ -110,24 +136,25 @@ function symlink(target, p) {
         }
     });
 }
-function resolveExternalWorkspacePath(workspace, startCwd, isExecroot, execroot, runfiles) {
+function resolveWorkspaceNodeModules(workspace, startCwd, isExecroot, execroot, runfiles) {
     return __awaiter(this, void 0, void 0, function* () {
+        const targetManifestPath = `${workspace}/node_modules`;
         if (isExecroot) {
-            return `${execroot}/external/${workspace}`;
+            return `${execroot}/external/${targetManifestPath}`;
         }
         if (!execroot) {
-            return path.resolve(`${startCwd}/../${workspace}`);
+            return path.resolve(`${startCwd}/../${targetManifestPath}`);
         }
-        const fromManifest = runfiles.lookupDirectory(workspace);
+        const fromManifest = runfiles.lookupDirectory(targetManifestPath);
         if (fromManifest) {
             return fromManifest;
         }
         else {
-            const maybe = path.resolve(`${execroot}/external/${workspace}`);
+            const maybe = path.resolve(`${execroot}/external/${targetManifestPath}`);
             if (yield exists(maybe)) {
                 return maybe;
             }
-            return path.resolve(`${startCwd}/../${workspace}`);
+            return path.resolve(`${startCwd}/../${targetManifestPath}`);
         }
     });
 }
@@ -275,11 +302,17 @@ function main(args, runfiles) {
                     stats = yield gracefulLstat(p);
                 }
                 if (runfiles.manifest && execroot && stats !== null && stats.isSymbolicLink()) {
-                    const symlinkPath = fs.readlinkSync(p).replace(/\\/g, '/');
-                    if (path.relative(symlinkPath, target) != '' &&
-                        !path.relative(execroot, symlinkPath).startsWith('..')) {
-                        log_verbose(`Out-of-date symlink for ${p} to ${symlinkPath} detected. Target should be ${target}. Unlinking.`);
-                        yield unlink(p);
+                    const symlinkPathRaw = gracefulReadlink(p);
+                    if (symlinkPathRaw !== null) {
+                        const symlinkPath = symlinkPathRaw.replace(/\\/g, '/');
+                        if (path.relative(symlinkPath, target) != '' &&
+                            !path.relative(execroot, symlinkPath).startsWith('..')) {
+                            log_verbose(`Out-of-date symlink for ${p} to ${symlinkPath} detected. Target should be ${target}. Unlinking.`);
+                            yield unlink(p);
+                        }
+                        else {
+                            log_verbose(`The symlink at ${p} no longer exists, so no need to unlink it.`);
+                        }
                     }
                 }
                 return symlink(target, p);
@@ -288,9 +321,8 @@ function main(args, runfiles) {
         for (const packagePath of Object.keys(roots)) {
             const workspace = roots[packagePath];
             if (workspace) {
-                const workspacePath = yield resolveExternalWorkspacePath(workspace, startCwd, isExecroot, execroot, runfiles);
-                log_verbose(`resolved ${workspace} workspace path to ${workspacePath}`);
-                const workspaceNodeModules = `${workspacePath}/node_modules`;
+                const workspaceNodeModules = yield resolveWorkspaceNodeModules(workspace, startCwd, isExecroot, execroot, runfiles);
+                log_verbose(`resolved ${workspace} workspace node modules path to ${workspaceNodeModules}`);
                 if (packagePath) {
                     if (yield exists(workspaceNodeModules)) {
                         yield mkdirp(packagePath);
@@ -308,7 +340,7 @@ function main(args, runfiles) {
                     }
                     else {
                         log_verbose(`no npm workspace node_modules folder under ${packagePath} to link to; creating node_modules directories in ${process.cwd()} for ${packagePath} 1p deps`);
-                        yield mkdirp('${packagePath}/node_modules');
+                        yield mkdirp(`${packagePath}/node_modules`);
                         if (!isExecroot) {
                             const runfilesPackagePath = `${startCwd}/${packagePath}`;
                             yield mkdirp(`${runfilesPackagePath}/node_modules`);

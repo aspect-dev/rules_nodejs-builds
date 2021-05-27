@@ -4,6 +4,7 @@
  * (ts.Diagnostics).
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.format = exports.uglyFormat = exports.filterExpected = void 0;
 const ts = require("typescript");
 /**
  * If the current compilation was a compilation test expecting certain

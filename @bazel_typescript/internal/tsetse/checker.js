@@ -4,6 +4,7 @@
  * file AST traversals and report errors.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Checker = void 0;
 const ts = require("typescript");
 const failure_1 = require("./failure");
 /**

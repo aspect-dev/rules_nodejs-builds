@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PropertyMatcher = void 0;
 // TODO: Export the matched node kinds here.
 /**
  * This class matches a property access node, based on a property holder type

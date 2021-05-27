@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public providers, aspects and helper surface is re-exported here.
+"""
+Public providers, aspects and helpers that are shipped in the built-in build_bazel_rules_nodejs repository.
 
 Users should not load files under "/internal"
 """
@@ -44,6 +45,10 @@ load(
     "//internal/providers:node_runtime_deps_info.bzl",
     _NodeRuntimeDepsInfo = "NodeRuntimeDepsInfo",
     _run_node = "run_node",
+)
+load(
+    "//internal/providers:tree_artifacts.bzl",
+    _DirectoryFilePathInfo = "DirectoryFilePathInfo",
 )
 
 DeclarationInfo = _DeclarationInfo
@@ -87,3 +92,4 @@ to create a NodeContextInfo.
 
 NodeRuntimeDepsInfo = _NodeRuntimeDepsInfo
 run_node = _run_node
+DirectoryFilePathInfo = _DirectoryFilePathInfo

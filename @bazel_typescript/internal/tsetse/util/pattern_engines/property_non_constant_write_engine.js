@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PropertyNonConstantWriteEngine = void 0;
 const ast_tools_1 = require("../ast_tools");
 const is_literal_1 = require("../is_literal");
 const property_write_engine_1 = require("./property_write_engine");

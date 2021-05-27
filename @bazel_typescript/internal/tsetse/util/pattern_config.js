@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PatternKind = void 0;
 /**
  * The list of supported patterns useable in ConformancePatternRule. The
  * patterns whose name match JSConformance patterns should behave similarly (see

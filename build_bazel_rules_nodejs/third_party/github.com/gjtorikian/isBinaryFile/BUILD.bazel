@@ -4,17 +4,18 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
+# buildifier: disable=load-on-top
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
 
 
 
 js_library(
     name = "isBinaryFile",
-    srcs = [
-        "src/index.js",
-        "package.json",
-    ],
     package_name = "isbinaryfile",
+    srcs = [
+        "package.json",
+        "src/index.js",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -24,5 +25,5 @@ filegroup(
         "BUILD.bazel",
         "LICENSE",
         ":isBinaryFile",
-    ]
+    ],
 )

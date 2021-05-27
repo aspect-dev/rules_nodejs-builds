@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Allowlist = exports.ExemptionReason = void 0;
 /**
  * The categories of exemption entries.
  */

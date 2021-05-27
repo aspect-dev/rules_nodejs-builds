@@ -20,7 +20,7 @@ They support module mapping: any targets in the transitive dependencies with
 a `module_name` attribute can be `require`d by that name.
 """
 
-load("//:providers.bzl", "ExternalNpmPackageInfo", "JSModuleInfo", "JSNamedModuleInfo", "NodeRuntimeDepsInfo", "node_modules_aspect")
+load("//:providers.bzl", "DirectoryFilePathInfo", "ExternalNpmPackageInfo", "JSModuleInfo", "JSNamedModuleInfo", "NodeRuntimeDepsInfo", "node_modules_aspect")
 load("//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
 load("//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
 load("//internal/common:path_utils.bzl", "strip_external")
@@ -28,6 +28,7 @@ load("//internal/common:preserve_legacy_templated_args.bzl", "preserve_legacy_te
 load("//internal/common:windows_utils.bzl", "create_windows_native_launcher_script", "is_windows")
 load("//internal/linker:link_node_modules.bzl", "MODULE_MAPPINGS_ASPECT_RESULTS_NAME", "module_mappings_aspect", "write_node_modules_manifest")
 load("//internal/node:node_repositories.bzl", "BUILT_IN_NODE_PLATFORMS")
+load("//internal/providers:tree_artifacts.bzl", "directory_file_path")
 
 def _trim_package_node_modules(package_name):
     # trim a package name down to its path prior to a node_modules
@@ -106,11 +107,17 @@ def _ts_to_js(entry_point_path):
         return entry_point_path[:-4] + ".js"
     return entry_point_path
 
-def _write_loader_script(ctx):
-    if len(ctx.attr.entry_point.files.to_list()) != 1:
+def _get_entry_point_file(ctx):
+    if len(ctx.attr.entry_point.files.to_list()) > 1:
         fail("labels in entry_point must contain exactly one file")
+    if len(ctx.files.entry_point) == 1:
+        return ctx.files.entry_point[0]
+    if DirectoryFilePathInfo in ctx.attr.entry_point:
+        return ctx.attr.entry_point[DirectoryFilePathInfo].directory
+    fail("entry_point must either be a file, or provide DirectoryFilePathInfo")
 
-    entry_point_path = _ts_to_js(_to_manifest_path(ctx, ctx.file.entry_point))
+def _write_loader_script(ctx):
+    entry_point_path = _ts_to_js(_to_manifest_path(ctx, _get_entry_point_file(ctx)))
 
     ctx.actions.expand_template(
         template = ctx.file._loader_template,
@@ -310,8 +317,12 @@ fi
     #else:
     #    substitutions["TEMPLATED_script_path"] = "$(rlocation \"%s\")" % _to_manifest_path(ctx, ctx.file.entry_point)
     # For now we need to look in both places
-    substitutions["TEMPLATED_entry_point_execroot_path"] = "\"%s\"" % _ts_to_js(_to_execroot_path(ctx, ctx.file.entry_point))
-    substitutions["TEMPLATED_entry_point_manifest_path"] = "$(rlocation \"%s\")" % _ts_to_js(_to_manifest_path(ctx, ctx.file.entry_point))
+    substitutions["TEMPLATED_entry_point_execroot_path"] = "\"%s\"" % _ts_to_js(_to_execroot_path(ctx, _get_entry_point_file(ctx)))
+    substitutions["TEMPLATED_entry_point_manifest_path"] = "$(rlocation \"%s\")" % _ts_to_js(_to_manifest_path(ctx, _get_entry_point_file(ctx)))
+    if DirectoryFilePathInfo in ctx.attr.entry_point:
+        substitutions["TEMPLATED_entry_point_main"] = ctx.attr.entry_point[DirectoryFilePathInfo].path
+    else:
+        substitutions["TEMPLATED_entry_point_main"] = ""
 
     ctx.actions.expand_template(
         template = ctx.file._launcher_template,
@@ -326,9 +337,10 @@ fi
     else:
         executable = ctx.outputs.launcher_sh
 
+    # syntax sugar: allows you to avoid repeating the entry point in data
     # entry point is only needed in runfiles if it is a .js file
-    if ctx.file.entry_point.extension == "js":
-        runfiles.append(ctx.file.entry_point)
+    if len(ctx.files.entry_point) == 1 and ctx.files.entry_point[0].extension == "js":
+        runfiles.extend(ctx.files.entry_point)
 
     return [
         DefaultInfo(
@@ -351,7 +363,7 @@ fi
         # TODO(alexeagle): remove sources and node_modules from the runfiles
         # when downstream usage is ready to rely on linker
         NodeRuntimeDepsInfo(
-            deps = depset([ctx.file.entry_point], transitive = [node_modules, sources]),
+            deps = depset(ctx.files.entry_point, transitive = [node_modules, sources]),
             pkgs = ctx.attr.data,
         ),
         # indicates that the this binary should be instrumented by coverage
@@ -462,7 +474,7 @@ nodejs_binary(
 ```
 """,
         mandatory = True,
-        allow_single_file = True,
+        allow_files = True,
     ),
     "env": attr.string_dict(
         doc = """Specifies additional environment variables to set when the target is executed, subject to location
@@ -614,7 +626,7 @@ _NODEJS_EXECUTABLE_OUTPUTS = {
 # bazel query --output=label_kind
 # So we make these match what the user types in their BUILD file
 # and duplicate the definitions to give two distinct symbols.
-nodejs_binary = rule(
+_nodejs_binary = rule(
     implementation = _nodejs_binary_impl,
     attrs = _NODEJS_EXECUTABLE_ATTRS,
     doc = "Runs some JavaScript code in NodeJS.",
@@ -626,7 +638,29 @@ nodejs_binary = rule(
     ],
 )
 
-nodejs_test = rule(
+def _entry_point_macro(name, entry_point):
+    if entry_point and type(entry_point) == "dict":
+        # convert {"//directory/artifact:target": "file/path"} to
+        # a directory_file_path entry_point
+        keys = entry_point.keys()
+        if len(keys) != 1:
+            fail("Expected a dict with a single entry that corresponds to the directory_file_path directory key & path value")
+        directory_file_path(
+            name = "%s_entry_point" % name,
+            directory = keys[0],
+            path = entry_point[keys[0]],
+        )
+        entry_point = ":%s_entry_point" % name
+    return entry_point
+
+def nodejs_binary(name, **kwargs):
+    _nodejs_binary(
+        name = name,
+        entry_point = _entry_point_macro(name, kwargs.pop("entry_point", None)),
+        **kwargs
+    )
+
+_nodejs_test = rule(
     implementation = _nodejs_binary_impl,
     attrs = dict(_NODEJS_EXECUTABLE_ATTRS, **{
         "expected_exit_code": attr.int(
@@ -674,3 +708,10 @@ remote debugger.
         "@bazel_tools//tools/sh:toolchain_type",
     ],
 )
+
+def nodejs_test(name, **kwargs):
+    _nodejs_test(
+        name = name,
+        entry_point = _entry_point_macro(name, kwargs.pop("entry_point", None)),
+        **kwargs
+    )

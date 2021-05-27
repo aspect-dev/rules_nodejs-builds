@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.snapshotMemoryUsage = exports.write = exports.counter = exports.wrap = void 0;
 /**
  * perf_trace records traces in the Chrome Trace format (which is actually used
  * for more than just Chrome).  See:

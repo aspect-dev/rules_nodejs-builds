@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isBinaryFileSync = exports.isBinaryFile = void 0;
 var fs = require("fs");
 var util_1 = require("util");
 var statAsync = util_1.promisify(fs.stat);

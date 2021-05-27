@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PatternEngine = void 0;
 const path = require("path");
 const allowlist_1 = require("../../util/allowlist");
 const ast_tools_1 = require("../ast_tools");

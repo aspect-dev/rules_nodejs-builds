@@ -17,31 +17,44 @@
 For use by yarn_install and npm_install. Not meant to be part of the public API.
 """
 
-load("@build_bazel_rules_nodejs//:providers.bzl", "ExternalNpmPackageInfo", "node_modules_aspect")
+load("//:providers.bzl", "DirectoryFilePathInfo", "ExternalNpmPackageInfo", "node_modules_aspect")
+load("//internal/providers:tree_artifacts.bzl", "directory_file_path")
 
-def _npm_umd_bundle(ctx):
-    if len(ctx.attr.entry_point.files.to_list()) != 1:
+def _entry_point_path(ctx):
+    if len(ctx.attr.entry_point.files.to_list()) > 1:
         fail("labels in entry_point must contain exactly one file")
+    if len(ctx.files.entry_point) == 1:
+        return ctx.files.entry_point[0].path
+    if DirectoryFilePathInfo in ctx.attr.entry_point:
+        return "/".join([
+            ctx.attr.entry_point[DirectoryFilePathInfo].directory.path,
+            ctx.attr.entry_point[DirectoryFilePathInfo].path,
+        ])
+    fail("entry_point must either be a file, or provide DirectoryFilePathInfo")
 
+def _impl(ctx):
     output = ctx.actions.declare_file("%s.umd.js" % ctx.attr.package_name)
 
     args = ctx.actions.args()
 
     args.add(ctx.workspace_name)
     args.add(ctx.attr.package_name)
-    args.add(ctx.file.entry_point.path)
+    args.add(_entry_point_path(ctx))
     args.add(output.path)
     args.add_joined(ctx.attr.excluded, join_with = ",")
 
     sources = ctx.attr.package[ExternalNpmPackageInfo].sources.to_list()
 
-    # Only pass .js and package.json files as inputs to browserify.
-    # The latter is required for module resolution in some cases.
-    inputs = [
-        f
-        for f in sources
-        if f.path.endswith(".js") or f.path.endswith(".json")
-    ]
+    if ctx.attr.package[ExternalNpmPackageInfo].directory_artifacts:
+        inputs = sources
+    else:
+        # Only pass .js and package.json files as inputs to browserify.
+        # The latter is required for module resolution in some cases.
+        inputs = [
+            f
+            for f in sources
+            if f.path.endswith(".js") or f.path.endswith(".json")
+        ]
 
     ctx.actions.run(
         progress_message = "Generated UMD bundle for %s npm package [browserify]" % ctx.attr.package_name,
@@ -56,11 +69,11 @@ def _npm_umd_bundle(ctx):
         OutputGroupInfo(umd = depset([output])),
     ]
 
-NPM_UMD_ATTRS = {
+_ATTRS = {
     "entry_point": attr.label(
         doc = """Entry point for the npm package""",
         mandatory = True,
-        allow_single_file = True,
+        allow_files = True,
     ),
     "excluded": attr.string_list(
         doc = """List of excluded packages that should not be bundled by browserify.
@@ -100,9 +113,31 @@ This target would be then be used instead of the generated `@npm//typeorm:typeor
     ),
 }
 
-npm_umd_bundle = rule(
-    implementation = _npm_umd_bundle,
-    attrs = NPM_UMD_ATTRS,
+_npm_umd_bundle = rule(
+    implementation = _impl,
+    attrs = _ATTRS,
     outputs = {"umd": "%{package_name}.umd.js"},
     doc = """Node package umd bundling""",
 )
+
+def _entry_point_macro(name, entry_point):
+    if entry_point and type(entry_point) == "dict":
+        # convert {"//directory/artifact:target": "file/path"} to
+        # a directory_file_path entry_point
+        keys = entry_point.keys()
+        if len(keys) != 1:
+            fail("Expected a dict with a single entry that corresponds to the directory_file_path directory key & path value")
+        directory_file_path(
+            name = "%s_entry_point" % name,
+            directory = keys[0],
+            path = entry_point[keys[0]],
+        )
+        entry_point = ":%s_entry_point" % name
+    return entry_point
+
+def npm_umd_bundle(name, **kwargs):
+    _npm_umd_bundle(
+        name = name,
+        entry_point = _entry_point_macro(name, kwargs.pop("entry_point", None)),
+        **kwargs
+    )

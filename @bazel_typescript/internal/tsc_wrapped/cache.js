@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UncachedFileLoader = exports.CachedFileLoader = exports.ProgramAndFileCache = exports.FileCache = void 0;
 const fs = require("fs");
 const ts = require("typescript");
 const perfTrace = require("./perf_trace");
