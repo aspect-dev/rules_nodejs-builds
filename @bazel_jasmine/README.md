@@ -99,7 +99,7 @@ Defaults to `"//@bazel/jasmine"`
 
 A label providing the `@bazel/jasmine` entry point.
 
-Defaults to `"//:node_modules/@bazel/jasmine/jasmine_runner.js"`
+Defaults to `Label("//:node_modules/@bazel/jasmine/jasmine_runner.js")`
 
 <h4 id="jasmine_node_test-kwargs">kwargs</h4>
 

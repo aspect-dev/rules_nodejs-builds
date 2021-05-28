@@ -170,7 +170,7 @@ def fetch_dependencies():
         ],
         sha256 = "4a5d654a4ccd4a4c24eca5d319d85a88a650edf119601550c95bf400c8cc897e",
     )`
-  let workspaceContent = `# Bazel workspace created by @bazel/create 3.5.1-9-g135b2fe
+  let workspaceContent = `# Bazel workspace created by @bazel/create 3.5.1-12-g6585510
 
 # Declares that this directory is the root of a Bazel workspace.
 # See https://docs.bazel.build/versions/master/build-ref.html#workspace
